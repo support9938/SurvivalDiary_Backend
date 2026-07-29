@@ -1,0 +1,17 @@
+spring:
+  profiles:
+    default: secret
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # 스키마 정본은 Flyway 마이그레이션 — JPA가 DDL을 만들지 않는다
+    open-in-view: false
+
+  flyway:
+    locations: classpath:db/migration
+
+jwt:
+  # 환경변수 JWT_SECRET(Base64, 256bit 이상)으로 주입한다 — 기본값 없음, 미설정 시 기동 실패
+  secret: ${JWT_SECRET}
+  access-token-validity-ms: 3600000      # 액세스 토큰 1시간
+  refresh-token-validity-ms: 1209600000  # 리프레시 토큰 2주
