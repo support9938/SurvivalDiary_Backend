@@ -1,171 +1,95 @@
-# Project identity
-
-- Survival Diary helps users record spending, manage budgets, discover saving opportunities, explore youth and living-policy information, and share practical money-saving knowledge through community features.
-- Reference screenshots may be used for interaction patterns, motion, spacing, and layout while keeping implementation aligned with Survival Diary's economy, saving, policy, and household-budget purpose.
+# AGENTS.md
 
 ## Repository and delivery rules
 
-- Repository: `https://github.com/support9938/SurvivalDiary_Backend`
-- Scope: Spring Boot API and database migrations only. Keep Flutter app and web frontend changes in their respective repositories.
-- Create every work branch as `{name}/{type}/{task}` using the actual owner name; for example, `alex/feat/email-signup-api`.
-- Use Conventional Commit messages such as `feat: persist signup interests`.
+- Repository: `https://github.com/KwanEon/SurvivalDiary_WebFrontend`
+- Scope: web frontend only. Keep Flutter app and Spring Boot API changes in their respective repositories.
+- Create every work branch as `{name}/{type}/{task}` using the actual owner name; for example, `alex/docs/repository-rules`.
+- Use Conventional Commit messages such as `docs: document repository delivery rules`.
 - Never commit or push directly to `main`. Push the work branch to this repository and open a pull request targeting `main`.
-- Validate schema changes with a new Flyway migration and run the relevant Gradle checks before delivery.
+- Do not commit generated build output, local editor settings, or secret files.
 
-# AGENTS.md ???앹〈?쇨린 API ?쒕쾭 (Survival Diary Web)
+이 문서는 Codex, Claude Code를 포함한 AI 에이전트와 팀원이 공통으로 따라야 할 작업 규칙입니다.
 
-AI 肄붾뵫 ?꾧뎄(ChatGPT Codex, Claude Code ??媛 ????μ냼?먯꽌 ?묒뾽????李몄“?섎뒗 ?뺣낯 臾몄꽌.
-??臾몄꽌??**?묒뾽 洹쒖튃怨?援ъ“**??吏묒쨷?쒕떎. DB ?ㅽ궎留??곸꽭??`docs/schema-spec.md` 李몄“.
+## 프로젝트 목표
 
----
+- 생존일기 웹 프런트엔드는 청년의 지출 관리, 정책 탐색, 절약 장소 검색, 정보 공유를 돕습니다.
+- 팀은 신입 개발자로 구성되어 있으므로 이해하기 쉬운 React 기본 기능을 우선합니다.
+- 복잡한 상태 관리, 과도한 추상화, AI 추천, 실시간 처리 기능은 명시적으로 합의하기 전까지 추가하지 않습니다.
 
-## 1. ?꾨줈?앺듃 ?뺤쓽
+## 현재 상태
 
-| ??ぉ | ?댁슜 |
-|---|---|
-| ??븷 | ?앹〈?쇨린(泥?뀈 寃쎌젣 ?먮┰ 吏??????**API ?쒕쾭**. ?붾㈃ ?놁쓬 ???대씪?댁뼵?몃뒗 Flutter ??`SurvivalDiary_App`) |
-| ?ㅽ깮 | Spring Boot 4.1.0 / Java 17 / Gradle Wrapper |
-| DB | MySQL 8.x (`survival_diary`) ???ㅽ궎留??뺣낯? **Flyway 留덉씠洹몃젅?댁뀡** |
-| ?몄쬆 | ?먯껜 JWT (?≪꽭??由ы봽?덉떆) ?덉젙(#5) ???꾩옱 BCrypt ?뚯썝媛?낃퉴吏 援ы쁽 |
-| 臾몄꽌 | springdoc(Swagger) ???쒕쾭 湲곕룞 ??http://localhost:8080/swagger-ui.html |
-| 諛고룷 ?덉젙 | AWS EC2 + RDS. ?묒냽 ?뺣낫쨌?쒗겕由우? **?섍꼍蹂?섎줈留?* 二쇱엯 |
+- React + TypeScript + Vite UI 프로토타입입니다.
+- 실제 인증, 저장, API 호출은 아직 구현하지 않았습니다.
+- 백엔드는 Spring Boot, 모바일 앱은 Flutter입니다.
 
----
+## 작업 전 확인
 
-## 2. ?묒뾽 洹쒖튃 (?꾩닔 以??
+1. 루트 `README.md`의 기능 범위와 우선순위를 읽습니다.
+2. 맡은 GitHub Issue와 기능 폴더를 확인합니다.
+3. 작업 중인 다른 브랜치가 같은 파일을 수정하는지 확인합니다.
+4. 기능 범위를 넓혀야 하면 임의로 구현하지 말고 별도 이슈를 제안합니다.
 
-1. **?ㅽ궎留??뺣낯? Flyway.** `src/main/resources/db/migration/V{n}__{?ㅻ챸}.sql` 濡쒕쭔 蹂寃쏀븳??
-   **?대? ?곸슜??留덉씠洹몃젅?댁뀡 ?뚯씪? ?덈? ?섏젙 湲덉?** ??蹂寃쎌? ??踰꾩쟾(V2, V3...) 異붽?濡쒕쭔.
-   `jpa.hibernate.ddl-auto: validate` 瑜??좎??쒕떎 (JPA媛 DDL??留뚮뱾吏 ?딅뒗??.
-2. **紐⑤뱺 API ?묐떟? `ApiResponse<T>`**, 紐⑸줉? `PageResponse<T>` 瑜??ъ슜?쒕떎 (?꾨옒 4??.
-   Flutter ?뚯떛 肄붾뱶瑜?怨듭쑀?섍린 ?꾪븳 ? 洹쒖빟?대?濡??덉쇅 ?놁씠 吏?⑤떎.
-3. **?덉쇅??`BusinessException` + `ErrorCode`** 濡쒕쭔 ?섏쭊?? HTTP ?곹깭濡?蹂?섏?
-   `GlobalExceptionHandler` 媛 ?대떦?쒕떎. ?먮윭 肄붾뱶??`{?꾨찓???묐몢??{3?먮━}` ??
-   C(怨듯넻) / U(?ъ슜?먃룹씤利? / P(寃뚯떆湲) / E(吏異쑣룹삁?? / Y(?뺤콉) / L(?μ냼).
-   ?꾨찓???묒뾽 ???대떦?먭? 蹂몄씤 ?묐몢???꾨옒 肄붾뱶瑜?異붽??쒕떎.
-4. **鍮꾨?踰덊샇??BCrypt ?댁떆留????** ?됰Ц ??Β룸줈源?湲덉?. JWT ?쒗겕由온텱B 鍮꾨?踰덊샇 ??
-   誘쇨컧 媛믪? 肄붾뱶/而ㅻ컠???ｌ? 留먭퀬 ?섍꼍蹂??`DB_URL`/`DB_USERNAME`/`DB_PASSWORD` ??濡?二쇱엯?쒕떎.
-   `application-dev.yml` ??湲곕낯媛믪? ? 怨듭슜 濡쒖뺄 湲곗?媛믪씠??
-5. **DTO??record + jakarta validation.** ?붿껌/?묐떟 ?꾨뱶?먮뒗 Swagger `@Schema`,
-   ?붾뱶?ъ씤?몄뿉??`@Operation` ???ъ븘 臾몄꽌留뚯쑝濡?API 怨꾩빟???뺤씤?????덇쾶 ?쒕떎.
-6. **?⑦궎吏 援ъ“ 以??*: `domain/<?꾨찓??/{controller,service,repository,entity,dto}` +
-   `global/{config,common,exception}`. ?좉퇋 ?꾨찓?몄? `domain/user` 瑜?寃щ낯?쇰줈 ?쇰뒗??
-7. **?쒓뎅??*: 二쇱꽍쨌?먮윭 硫붿떆吏쨌API ?ㅻ챸? ?쒓뎅?? 肄붾뱶 ?앸퀎?먮뒗 ?곸뼱.
-8. 蹂寃???`./gradlew build` 媛 ?듦낵?댁빞 ?쒕떎 (Windows??`gradlew.bat build`).
+## 기능 소유 경계
 
----
+| 기능         | 수정 기본 범위                       |
+| ------------ | ------------------------------------ |
+| 홈·하루 예산 | `src/features/dashboard/**`          |
+| 지출 등록    | `src/features/expense-entry/**`      |
+| 지출 통계    | `src/features/expense-statistics/**` |
+| 정책 추천    | `src/features/policies/**`           |
+| 절약 지도    | `src/features/savings-map/**`        |
+| 커뮤니티     | `src/features/community/**`          |
 
-## 3. 源?怨듭쑀 洹쒖튃
+- 담당자는 원칙적으로 자신의 기능 폴더만 수정합니다.
+- 다른 기능 폴더 내부의 컴포넌트, 타입, 목업 데이터를 직접 import하지 않습니다.
+- 두 기능에서 공통으로 쓰일 코드가 생기면 먼저 중복을 허용합니다. 실제로 두 곳 이상에서 안정적으로 사용된 뒤 `src/shared` 이동을 검토합니다.
+- 라우트 추가가 필요할 때만 `src/app/App.tsx`를 최소 범위로 수정합니다.
 
-`SurvivalDiary_App` 怨??숈씪??洹쒖튃???대떎.
+## 스타일 규칙
 
-1. **釉뚮옖移섎뒗 `{?대쫫}/{???/{?묒뾽紐?` ?뺤떇** (?? `alex/feat/login-jwt`).
-   ??낆? 而ㅻ컠 ?묐몢?ъ? ?숈씪?섍쾶 `feat`/`fix`/`docs`/`refactor`/`chore` ??
-2. **而ㅻ컠 硫붿떆吏??Conventional Commits**: `feat: 濡쒓렇??API 援ы쁽`, `docs: ?ㅽ궎留?紐낆꽭 媛깆떊`.
-   愿???댁뒋媛 ?덉쑝硫?蹂몃Ц?대굹 ?쒕ぉ ?앹뿉 `(#5)` 泥섎읆 李몄“?쒕떎.
-3. **`main` 吏곸빱諛?湲덉? ??PR濡쒕쭔 癒몄??쒕떎.** PR 蹂몃Ц?먮뒗 媛쒖슂 / ?묒뾽 ?댁슜 / ?뚯뒪??諛⑸쾿???곷뒗??
-   湲곕뒫 ?⑥쐞濡?釉뚮옖移섎? 吏㏐쾶 ?좎??섍퀬, 癒몄? ??釉뚮옖移섎뒗 ??젣?쒕떎.
-4. 二쇱쓽: `{name}/feat` 泥섎읆 **?곸쐞 寃쎈줈? 媛숈? ?대쫫??釉뚮옖移섍? ?대? ?덉쑝硫??섏쐞 釉뚮옖移섎?
-   留뚮뱾 ???녿떎** (git ref 異⑸룎). ??긽 3???꾩껜 寃쎈줈濡?釉뚮옖移섎? 留뚮뱺??
+- 색상, 여백, 반경, 그림자는 `src/shared/styles/tokens.css` 변수를 사용합니다.
+- 기능별 CSS 클래스는 기능 이름 접두사를 사용합니다.
+  - 예: `policy-card`, `savings-map__marker`, `community-post`
+- 기능 CSS는 해당 기능의 `styles` 폴더에 둡니다.
+- 공통 토큰에 없는 값이 필요하면 기존 변수로 표현할 수 있는지 먼저 확인합니다.
+- 접근성을 위해 버튼에는 `type`을 명시하고 아이콘 단독 버튼에는 `aria-label`을 추가합니다.
+- 데스크톱뿐 아니라 760px 이하 화면도 깨지지 않도록 작성합니다.
 
----
+## TypeScript·React 규칙
 
-## 4. API 怨듯넻 洹쒖빟
+- 새 코드는 `.ts`, `.tsx`만 사용합니다.
+- `any`를 사용하지 않습니다.
+- 페이지는 `pages`, 목업 데이터는 `mocks.ts`, 기능 전용 스타일은 `styles`로 구분합니다.
+- UI 상태는 먼저 `useState`로 해결합니다. 여러 페이지에서 실제로 공유되기 전에는 전역 상태 라이브러리를 추가하지 않습니다.
+- 서버 데이터는 기능 폴더 안의 `api`와 `types`에 둡니다.
+- 컴포넌트가 너무 커질 때만 `components` 폴더로 분리합니다.
+- 버튼과 입력을 실제 기능처럼 보이게 만들더라도 API 계약이 정해지기 전 임의의 서버 호출을 추가하지 않습니다.
 
-### 4-1. ?묐떟 ?щ㎎ ??`global/common/ApiResponse.java`
+## API 연동 규칙
 
-```json
-// ?깃났
-{ "success": true, "data": { ... } }
+- API 기본 주소는 `VITE_API_BASE_URL`을 사용합니다.
+- 공공데이터 API는 React에서 직접 호출하지 않고 Spring Boot를 거칩니다.
+- API 키, 토큰, 개인정보를 저장소에 커밋하지 않습니다.
+- 금액은 정수 원 단위, 날짜는 ISO 8601 형식을 사용합니다.
+- Flutter 결제 알림 내역은 Flutter → Spring Boot → React 순서로 전달합니다.
 
-// ?ㅽ뙣
-{ "success": false, "error": { "code": "U001", "message": "?대? ?ъ슜 以묒씤 ?대찓?쇱엯?덈떎." } }
-```
+## 브랜치와 커밋
 
-### 4-2. ?섏씠吏???`global/common/PageResponse.java`
+- 브랜치: `이름/feat/기능명`, `이름/fix/수정명`
+- 한 브랜치에서 한 기능 또는 한 이슈만 처리합니다.
+- 커밋 예:
+  - `feat(policy): 정책 상세 화면 추가`
+  - `fix(map): 모바일 필터 줄바꿈 수정`
+  - `docs: 지출 API 계약 문서 추가`
+- 공통 파일 변경은 기능 변경과 별도 커밋으로 분리합니다.
+- 생성 파일, 빌드 결과물, `.env`는 커밋하지 않습니다.
 
-?붿껌: `?page=0&size=20&sort=createdAt,desc` (page 0遺?? size 湲곕낯 20쨌理쒕? 100)
+## 완료 기준
 
-```json
-{ "content": [ ... ], "page": 0, "size": 20, "totalElements": 42, "totalPages": 3, "hasNext": true }
-```
-
-?ъ슜 ?? `PageResponse.from(repository.findAll(pageable).map(Dto::from))`
-
-### 4-3. ?꾩옱 ?뺤쓽???먮윭 肄붾뱶 ??`global/exception/ErrorCode.java`
-
-| 肄붾뱶 | HTTP | ?섎? |
-|---|---|---|
-| C001 | 400 | ?낅젰媛?寃利??ㅽ뙣 |
-| C002 | 401 | ?몄쬆 ?꾩슂 |
-| C003 | 403 | ?묎렐 沅뚰븳 ?놁쓬 |
-| C004 | 404 | 由ъ냼???놁쓬 |
-| C005 | 500 | ?쒕쾭 ?ㅻ쪟 |
-| U001 | 409 | ?대찓??以묐났 |
-| U002 | 401 | 濡쒓렇???ㅽ뙣 (?대찓??鍮꾨?踰덊샇 遺덉씪移? |
-| U003 | 401 | ?좏슚?섏? ?딆? ?좏겙 |
-| U004 | 401 | 留뚮즺???좏겙 |
-| U005 | 404 | ?ъ슜???놁쓬 |
-
----
-
-## 5. ?붾젆?곕━ 援ъ“
-
-```
-src/main/java/com/survivaldiary/
-?쒋? SurvivalDiaryApplication.java
-?쒋? global/
-?? ?쒋? config/        SecurityConfig(BCrypt, ?몄쬆 ?덉쇅 寃쎈줈) 쨌 SwaggerConfig(JWT bearer)
-?? ?붴? exception/     ErrorCode 쨌 BusinessException 쨌 GlobalExceptionHandler
-?쒋? domain/
-?? ?쒋? user/          ?뚯썝媛??援ы쁽?????좉퇋 ?꾨찓?몄쓽 寃щ낯
-?? ?? ?쒋? controller/ AuthController (POST /api/auth/signup)
-?? ?? ?쒋? service/    AuthService
-?? ?? ?쒋? repository/ UserRepository
-?? ?? ?쒋? entity/     User (Gender/Role enum ?ы븿)
-?? ?? ?붴? dto/        SignupRequest
-?? ?붴? diary 쨌 policy 쨌 place 쨌 post 쨌 image   (?대떦?먮퀎 ?묒뾽 ?덉젙)
-?붴? resources/
-   ?쒋? application.yml        怨듯넻 (profiles.default=dev, ddl-auto=validate)
-   ?쒋? application-dev.yml    濡쒖뺄 媛쒕컻??datasource (?섍꼍蹂?섎줈 ??뼱?곌린 媛??
-   ?붴? db/migration/          V1__init.sql (16媛??뚯씠釉?+ 移댄뀒怨좊━ ?쒕뱶)
-```
-
-
----
-
-## 6. 濡쒖뺄 ?ㅽ뻾
-
-MySQL 8.x媛 濡쒖뺄 3306?????덇퀬 `survival_diary` ?곗씠?곕쿋?댁뒪媛 ?덉뼱???쒕떎
-(`CREATE DATABASE survival_diary CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`).
-?ㅽ궎留덈뒗 ?쒕쾭 湲곕룞 ??Flyway媛 ?먮룞 ?곸슜?쒕떎.
-
-```bash
-./gradlew bootRun
-```
-
-?묒냽 ?뺣낫媛 湲곕낯媛?root/root1234)怨??ㅻⅤ硫??섍꼍蹂?섎줈 二쇱엯?쒕떎:
-`DB_PASSWORD=?대퉬諛踰덊샇 ./gradlew bootRun` (Windows PowerShell: `$env:DB_PASSWORD='?대퉬諛踰덊샇'; .\gradlew.bat bootRun`)
-
-- API ?뚯뒪?몃뒗 **Swagger UI ?ъ슜??沅뚯옣** ??Windows 肄섏넄 curl? ?쒓? body媛 CP949濡?
-  源⑥졇 400/500???????덈떎 (UTF-8 ?뚯씪 + `--data-binary @file` 濡??고쉶 媛??.
-- 8080 ?ы듃媛 ?대? ?ъ슜 以묒씠硫??댁쟾 ?쒕쾭 ?꾨줈?몄뒪媛 ?⑥? 寃???醫낅즺 ???ш린?숉븳??
-
----
-
-## 7. ?댁뒋 ?몃옒而?
-
-?묒뾽 ?⑥쐞??GitHub ?댁뒋濡?遺꾨같?섏뼱 ?덈떎 (`KwanEon/SurvivalDiary_WebBackend`).
-愿由ъ옄 ???꾨줎?몄뿏?쒕뒗 蹂꾨룄 ??μ냼(`KwanEon/SurvivalDiary_WebFrontend`)?먯꽌 吏꾪뻾?섎ŉ,
-?댁뒋??諛깆뿏???꾨줎?몄뿏????μ냼??媛곴컖 援щ텇???깅줉?쒕떎.
-?쒕쾭 怨듯넻 ?명똿(#1~#4)? ?꾨즺. ?몄쬆(#5~#6) ???대?吏 ?낅줈??#7) ??而ㅻ??덊떚(#8~#9) ?쒖쑝濡?吏꾪뻾?섎ŉ,
-而ㅻ??덊떚 ?꾨찓??肄붾뱶媛 ????꾨찓???묒뾽???ъ슜 ?덉떆媛 ?쒕떎.
-
----
-
-## Git branch ownership rule
-
-- 紐⑤뱺 ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`{name}/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
-- `main`?먮뒗 ?덈? 吏곸젒 而ㅻ컠?섍굅??吏곸젒 push?섏? ?딅뒗??
-- 紐⑤뱺 蹂寃??ы빆? ?묒뾽 釉뚮옖移섏뿉 push????PR濡쒕쭔 `main`??諛섏쁺?쒕떎.
-- 而ㅻ컠 硫붿떆吏??Conventional Commits ?뺤떇???ъ슜?쒕떎. ?? `feat: add email signup api`.
+- GitHub Issue의 완료 조건을 모두 충족합니다.
+- 맡은 기능 폴더 밖의 불필요한 변경이 없습니다.
+- TypeScript 오류가 없습니다.
+- 데스크톱과 모바일에서 주요 UI가 겹치지 않습니다.
+- 빈 목록, 로딩, 오류 상태가 필요한 기능은 각 상태 UI를 포함합니다.
+- README 또는 이슈에 API 의존성과 미완료 범위를 기록합니다.
