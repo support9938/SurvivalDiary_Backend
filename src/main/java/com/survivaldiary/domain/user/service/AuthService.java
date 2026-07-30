@@ -12,6 +12,7 @@ import com.survivaldiary.global.exception.ErrorCode;
 import com.survivaldiary.global.security.JwtTokenProvider;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,10 +40,18 @@ public class AuthService {
                 .birthDate(request.birthDate())
                 .gender(request.gender())
                 .region(request.region())
+                .signupInterest(joinSignupInterests(request.signupInterests()))
                 .role(User.Role.USER)
                 .build();
 
         return userRepository.save(user).getId();
+    }
+
+    private String joinSignupInterests(List<String> signupInterests) {
+        if (signupInterests == null || signupInterests.isEmpty()) {
+            return null;
+        }
+        return String.join(",", signupInterests);
     }
 
     /**

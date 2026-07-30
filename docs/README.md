@@ -12,7 +12,7 @@ ERD(한글 컬럼)를 영어 snake_case로 변환한 정본 스키마는 [schema
 ```bash
 docker run -d --name survival-diary-db \
   -e MYSQL_ROOT_PASSWORD=root1234 \
-  -e MYSQL_DATABASE=survival_diary \
+  -e MYSQL_DATABASE=survival_diary_db \
   -e TZ=Asia/Seoul \
   -p 3306:3306 \
   mysql:8.4 \
@@ -34,7 +34,7 @@ mysql -u root -p < schema.sql
 적용 확인:
 
 ```sql
-USE survival_diary;
+USE survival_diary_db;
 SHOW TABLES;          -- 16개 테이블
 SELECT * FROM categories;  -- 기본 카테고리 5건
 ```
@@ -42,8 +42,8 @@ SELECT * FROM categories;  -- 기본 카테고리 5건
 ### 앱 전용 계정 생성 (root 사용 금지)
 
 ```sql
-CREATE USER 'survival_app'@'%' IDENTIFIED BY '비밀번호변경필수';
-GRANT SELECT, INSERT, UPDATE, DELETE ON survival_diary.* TO 'survival_app'@'%';
+CREATE USER 'sd_user'@'%' IDENTIFIED BY '비밀번호변경필수';
+GRANT SELECT, INSERT, UPDATE, DELETE ON survival_diary_db.* TO 'sd_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -120,8 +120,8 @@ DB에는 경로만 기록한다.
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/survival_diary?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: survival_app
+    url: jdbc:mysql://localhost:3306/survival_diary_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: sd_user
     password: ${DB_PASSWORD}     # 환경변수로 주입, 커밋 금지
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:

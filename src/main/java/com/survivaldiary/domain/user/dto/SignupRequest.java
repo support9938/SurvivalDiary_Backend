@@ -4,9 +4,9 @@ import com.survivaldiary.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.List;
 
 @Schema(description = "회원가입 요청")
 public record SignupRequest(
@@ -16,25 +16,29 @@ public record SignupRequest(
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
 
-        @Schema(description = "비밀번호 — 8~64자, 영문·숫자 각 1자 이상", example = "password1234")
+        @Schema(description = "비밀번호. 임시 정책상 빈 값만 거부합니다.", example = "1")
         @NotBlank(message = "비밀번호는 필수입니다.")
-        @Size(min = 8, max = 64, message = "비밀번호는 8~64자여야 합니다.")
-        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
-                 message = "비밀번호는 영문과 숫자를 각각 1자 이상 포함해야 합니다.")
+        @Size(max = 64, message = "비밀번호는 64자 이하여야 합니다.")
         String password,
 
-        @Schema(description = "이름", example = "홍길동")
+        @Schema(description = "이름", example = "김민")
         @NotBlank(message = "이름은 필수입니다.")
         @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
         String name,
 
-        @Schema(description = "생년월일 (선택)", example = "2000-03-15")
+        @Schema(description = "생년월일", example = "1998-08-08")
         LocalDate birthDate,
 
-        @Schema(description = "성별 (선택): MALE / FEMALE / OTHER")
+        @Schema(description = "성별: MALE / FEMALE")
         User.Gender gender,
 
-        @Schema(description = "지역 (선택)", example = "서울")
+        @Schema(description = "지역", example = "서울")
         @Size(max = 50)
-        String region
+        String region,
+
+        @Schema(
+                description = "회원가입 관심사 전체 목록",
+                example = "[\"LIVING_COST\", \"YOUTH_POLICY\"]"
+        )
+        List<String> signupInterests
 ) {}
