@@ -37,6 +37,7 @@ public class AuthService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .name(request.name())
+                .phone(request.phone())
                 .birthDate(request.birthDate())
                 .gender(request.gender())
                 .region(request.region())

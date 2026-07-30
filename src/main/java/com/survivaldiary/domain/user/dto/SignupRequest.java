@@ -4,6 +4,7 @@ import com.survivaldiary.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +26,12 @@ public record SignupRequest(
         @NotBlank(message = "이름은 필수입니다.")
         @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
         String name,
+
+        @Schema(description = "Phone number", example = "01012345678")
+        @NotBlank(message = "Phone number is required.")
+        @Size(min = 10, max = 11, message = "Phone number must contain 10 to 11 digits.")
+        @Pattern(regexp = "\\d{10,11}", message = "Phone number must contain digits only.")
+        String phone,
 
         @Schema(description = "생년월일", example = "1998-08-08")
         LocalDate birthDate,
