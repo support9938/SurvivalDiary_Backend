@@ -1,4 +1,4 @@
-﻿# Project identity
+# Project identity
 
 - Survival Diary helps users record spending, manage budgets, discover saving opportunities, explore youth and living-policy information, and share practical money-saving knowledge through community features.
 - Reference screenshots may be used for interaction patterns, motion, spacing, and layout while keeping implementation aligned with Survival Diary's economy, saving, policy, and household-budget purpose.
@@ -7,8 +7,7 @@
 
 - Repository: `https://github.com/support9938/SurvivalDiary_Backend`
 - Scope: Spring Boot API and database migrations only. Keep Flutter app and web frontend changes in their respective repositories.
-- Jade Cohen / `ligr00vefe@naver.com` work is owned by `kimin`.
-- Create every work branch as `{name}/{type}/{task}`. For this owner, use `kimin/{type}/{task}`; for example, `kimin/feat/email-signup-api`.
+- Create every work branch as `{name}/{type}/{task}` using the actual owner name; for example, `alex/feat/email-signup-api`.
 - Use Conventional Commit messages such as `feat: persist signup interests`.
 - Never commit or push directly to `main`. Push the work branch to this repository and open a pull request targeting `main`.
 - Validate schema changes with a new Flyway migration and run the relevant Gradle checks before delivery.
@@ -60,13 +59,13 @@ AI 肄붾뵫 ?꾧뎄(ChatGPT Codex, Claude Code ??媛 ????μ냼?먯꽌 ?묒�
 
 `SurvivalDiary_App` 怨??숈씪??洹쒖튃???대떎.
 
-1. **釉뚮옖移섎뒗 `{?대쫫}/{???/{?묒뾽紐?` ?뺤떇** (?? `kimin/feat/login-jwt`).
+1. **釉뚮옖移섎뒗 `{?대쫫}/{???/{?묒뾽紐?` ?뺤떇** (?? `alex/feat/login-jwt`).
    ??낆? 而ㅻ컠 ?묐몢?ъ? ?숈씪?섍쾶 `feat`/`fix`/`docs`/`refactor`/`chore` ??
 2. **而ㅻ컠 硫붿떆吏??Conventional Commits**: `feat: 濡쒓렇??API 援ы쁽`, `docs: ?ㅽ궎留?紐낆꽭 媛깆떊`.
    愿???댁뒋媛 ?덉쑝硫?蹂몃Ц?대굹 ?쒕ぉ ?앹뿉 `(#5)` 泥섎읆 李몄“?쒕떎.
 3. **`main` 吏곸빱諛?湲덉? ??PR濡쒕쭔 癒몄??쒕떎.** PR 蹂몃Ц?먮뒗 媛쒖슂 / ?묒뾽 ?댁슜 / ?뚯뒪??諛⑸쾿???곷뒗??
    湲곕뒫 ?⑥쐞濡?釉뚮옖移섎? 吏㏐쾶 ?좎??섍퀬, 癒몄? ??釉뚮옖移섎뒗 ??젣?쒕떎.
-4. 二쇱쓽: `kimin/feat` 泥섎읆 **?곸쐞 寃쎈줈? 媛숈? ?대쫫??釉뚮옖移섍? ?대? ?덉쑝硫??섏쐞 釉뚮옖移섎?
+4. 二쇱쓽: `{name}/feat` 泥섎읆 **?곸쐞 寃쎈줈? 媛숈? ?대쫫??釉뚮옖移섍? ?대? ?덉쑝硫??섏쐞 釉뚮옖移섎?
    留뚮뱾 ???녿떎** (git ref 異⑸룎). ??긽 3???꾩껜 寃쎈줈濡?釉뚮옖移섎? 留뚮뱺??
 
 ---
@@ -166,10 +165,7 @@ MySQL 8.x媛 濡쒖뺄 3306?????덇퀬 `survival_diary` ?곗씠?곕쿋?댁뒪�
 
 ## Git branch ownership rule
 
-- Jade Cohen / ligr00vefe@naver.com ?묒뾽?먮뒗 `kimin`?쇰줈 ?앸퀎?쒕떎.
 - 紐⑤뱺 ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`{name}/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
-- kimin ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`kimin/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
-- ?덉슜 ?덉떆: `kimin/feat/signup-api`, `kimin/fix/auth-token`, `kimin/chore/initial-backend-snapshot`.
 - `main`?먮뒗 ?덈? 吏곸젒 而ㅻ컠?섍굅??吏곸젒 push?섏? ?딅뒗??
 - 紐⑤뱺 蹂寃??ы빆? ?묒뾽 釉뚮옖移섏뿉 push????PR濡쒕쭔 `main`??諛섏쁺?쒕떎.
 - 而ㅻ컠 硫붿떆吏??Conventional Commits ?뺤떇???ъ슜?쒕떎. ?? `feat: add email signup api`.
