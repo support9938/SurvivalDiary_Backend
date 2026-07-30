@@ -11,6 +11,7 @@ public record UserResponse(
         LocalDate birthDate,
         User.Gender gender,
         String region,
+        String signupInterest,
         User.Role role,
         LocalDateTime createdAt
 ) {
@@ -23,6 +24,7 @@ public record UserResponse(
                 user.getBirthDate(),
                 user.getGender(),
                 user.getRegion(),
+                user.getSignupInterest(),
                 user.getRole(),
                 user.getCreatedAt()
         );

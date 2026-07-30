@@ -47,6 +47,9 @@ public class User {
     @Column(length = 50)
     private String region;
 
+    @Column(name = "signup_interest", length = 255)
+    private String signupInterest;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
@@ -56,13 +59,15 @@ public class User {
 
     @Builder
     private User(String email, String password, String name,
-                 LocalDate birthDate, Gender gender, String region, Role role) {
+                 LocalDate birthDate, Gender gender, String region,
+                 String signupInterest, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.birthDate = birthDate;
         this.gender = gender;
         this.region = region;
+        this.signupInterest = signupInterest;
         this.role = role != null ? role : Role.USER;
     }
 
@@ -75,5 +80,5 @@ public class User {
 
     public enum Role { USER, ADMIN }
 
-    public enum Gender { MALE, FEMALE, OTHER }
+    public enum Gender { MALE, FEMALE }
 }

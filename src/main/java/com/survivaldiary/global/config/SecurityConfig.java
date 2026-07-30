@@ -16,8 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * JWT 기반 무상태 보안 설정.
- * 인증 예외 경로: /health, /api/auth/**, Swagger. 나머지는 전부 액세스 토큰 필요.
- * 필터 단계 에러도 ApiResponse 포맷으로 응답한다 (EntryPoint/AccessDeniedHandler).
+ * 인증 예외 경로는 회원가입/로그인 API와 Swagger 문서로 제한한다.
  */
 @Configuration
 @EnableWebSecurity
@@ -31,13 +30,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // JWT 기반 무상태 API — 세션/폼 로그인 미사용
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 .accessDeniedHandler(jwtAccessDeniedHandler))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/health").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .anyRequest().authenticated())
