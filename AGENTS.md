@@ -9,163 +9,170 @@
 - Scope: Spring Boot API and database migrations only. Keep Flutter app and web frontend changes in their respective repositories.
 - Create every work branch as `{name}/{type}/{task}` using the actual owner name; for example, `alex/feat/email-signup-api`.
 - Use Conventional Commit messages such as `feat: persist signup interests`.
+- 커밋 메시지와 PR 제목·본문은 한글로 작성한다. Conventional Commit 접두사(`feat:`, `fix:`, `docs:` 등)를 사용할 때에도 접두사 뒤 작업 설명은 한글로 쓴다.
 - Never commit or push directly to `main`. Push the work branch to this repository and open a pull request targeting `main`.
 - Validate schema changes with a new Flyway migration and run the relevant Gradle checks before delivery.
 
-# AGENTS.md ???앹〈?쇨린 API ?쒕쾭 (Survival Diary Web)
+# AGENTS.md — 생존일기 API 서버 (Survival Diary Web)
 
-AI 肄붾뵫 ?꾧뎄(ChatGPT Codex, Claude Code ??媛 ????μ냼?먯꽌 ?묒뾽????李몄“?섎뒗 ?뺣낯 臾몄꽌.
-??臾몄꽌??**?묒뾽 洹쒖튃怨?援ъ“**??吏묒쨷?쒕떎. DB ?ㅽ궎留??곸꽭??`docs/schema-spec.md` 李몄“.
+AI 코딩 도구(ChatGPT Codex, Claude Code 등)가 이 저장소에서 작업할 때 참조하는 정본 문서.
+이 문서는 **작업 규칙과 구조**에 집중한다. DB 스키마 상세는 `docs/schema-spec.md` 참조.
 
 ---
 
-## 1. ?꾨줈?앺듃 ?뺤쓽
+## 1. 프로젝트 정의
 
-| ??ぉ | ?댁슜 |
+| 항목 | 내용 |
 |---|---|
-| ??븷 | ?앹〈?쇨린(泥?뀈 寃쎌젣 ?먮┰ 吏??????**API ?쒕쾭**. ?붾㈃ ?놁쓬 ???대씪?댁뼵?몃뒗 Flutter ??`SurvivalDiary_App`) |
-| ?ㅽ깮 | Spring Boot 4.1.0 / Java 17 / Gradle Wrapper |
-| DB | MySQL 8.x (`survival_diary`) ???ㅽ궎留??뺣낯? **Flyway 留덉씠洹몃젅?댁뀡** |
-| ?몄쬆 | ?먯껜 JWT (?≪꽭??由ы봽?덉떆) ?덉젙(#5) ???꾩옱 BCrypt ?뚯썝媛?낃퉴吏 援ы쁽 |
-| 臾몄꽌 | springdoc(Swagger) ???쒕쾭 湲곕룞 ??http://localhost:8080/swagger-ui.html |
-| 諛고룷 ?덉젙 | AWS EC2 + RDS. ?묒냽 ?뺣낫쨌?쒗겕由우? **?섍꼍蹂?섎줈留?* 二쇱엯 |
+| 역할 | 생존일기(청년 경제 자립 지원 앱)의 **API 서버**. 화면 없음 — 클라이언트는 Flutter 앱(`SurvivalDiary_App`) |
+| 스택 | Spring Boot 4.1.0 / Java 17 / Gradle Wrapper |
+| DB | MySQL 8.x (`survival_diary`) — 스키마 정본은 **Flyway 마이그레이션** |
+| 인증 | 자체 JWT (액세스+리프레시) 예정(#5) — 현재 BCrypt 회원가입까지 구현 |
+| 문서 | springdoc(Swagger) — 서버 기동 후 http://localhost:8080/swagger-ui.html |
+| 배포 예정 | AWS EC2 + RDS. 접속 정보·시크릿은 **환경변수로만** 주입 |
 
 ---
 
-## 2. ?묒뾽 洹쒖튃 (?꾩닔 以??
+## 2. 작업 규칙 (필수 준수)
 
-1. **?ㅽ궎留??뺣낯? Flyway.** `src/main/resources/db/migration/V{n}__{?ㅻ챸}.sql` 濡쒕쭔 蹂寃쏀븳??
-   **?대? ?곸슜??留덉씠洹몃젅?댁뀡 ?뚯씪? ?덈? ?섏젙 湲덉?** ??蹂寃쎌? ??踰꾩쟾(V2, V3...) 異붽?濡쒕쭔.
-   `jpa.hibernate.ddl-auto: validate` 瑜??좎??쒕떎 (JPA媛 DDL??留뚮뱾吏 ?딅뒗??.
-2. **紐⑤뱺 API ?묐떟? `ApiResponse<T>`**, 紐⑸줉? `PageResponse<T>` 瑜??ъ슜?쒕떎 (?꾨옒 4??.
-   Flutter ?뚯떛 肄붾뱶瑜?怨듭쑀?섍린 ?꾪븳 ? 洹쒖빟?대?濡??덉쇅 ?놁씠 吏?⑤떎.
-3. **?덉쇅??`BusinessException` + `ErrorCode`** 濡쒕쭔 ?섏쭊?? HTTP ?곹깭濡?蹂?섏?
-   `GlobalExceptionHandler` 媛 ?대떦?쒕떎. ?먮윭 肄붾뱶??`{?꾨찓???묐몢??{3?먮━}` ??
-   C(怨듯넻) / U(?ъ슜?먃룹씤利? / P(寃뚯떆湲) / E(吏異쑣룹삁?? / Y(?뺤콉) / L(?μ냼).
-   ?꾨찓???묒뾽 ???대떦?먭? 蹂몄씤 ?묐몢???꾨옒 肄붾뱶瑜?異붽??쒕떎.
-4. **鍮꾨?踰덊샇??BCrypt ?댁떆留????** ?됰Ц ??Β룸줈源?湲덉?. JWT ?쒗겕由온텱B 鍮꾨?踰덊샇 ??
-   誘쇨컧 媛믪? 肄붾뱶/而ㅻ컠???ｌ? 留먭퀬 ?섍꼍蹂??`DB_URL`/`DB_USERNAME`/`DB_PASSWORD` ??濡?二쇱엯?쒕떎.
-   `application-dev.yml` ??湲곕낯媛믪? ? 怨듭슜 濡쒖뺄 湲곗?媛믪씠??
-5. **DTO??record + jakarta validation.** ?붿껌/?묐떟 ?꾨뱶?먮뒗 Swagger `@Schema`,
-   ?붾뱶?ъ씤?몄뿉??`@Operation` ???ъ븘 臾몄꽌留뚯쑝濡?API 怨꾩빟???뺤씤?????덇쾶 ?쒕떎.
-6. **?⑦궎吏 援ъ“ 以??*: `domain/<?꾨찓??/{controller,service,repository,entity,dto}` +
-   `global/{config,common,exception}`. ?좉퇋 ?꾨찓?몄? `domain/user` 瑜?寃щ낯?쇰줈 ?쇰뒗??
-7. **?쒓뎅??*: 二쇱꽍쨌?먮윭 硫붿떆吏쨌API ?ㅻ챸? ?쒓뎅?? 肄붾뱶 ?앸퀎?먮뒗 ?곸뼱.
-8. 蹂寃???`./gradlew build` 媛 ?듦낵?댁빞 ?쒕떎 (Windows??`gradlew.bat build`).
-
----
-
-## 3. 源?怨듭쑀 洹쒖튃
-
-`SurvivalDiary_App` 怨??숈씪??洹쒖튃???대떎.
-
-1. **釉뚮옖移섎뒗 `{?대쫫}/{???/{?묒뾽紐?` ?뺤떇** (?? `alex/feat/login-jwt`).
-   ??낆? 而ㅻ컠 ?묐몢?ъ? ?숈씪?섍쾶 `feat`/`fix`/`docs`/`refactor`/`chore` ??
-2. **而ㅻ컠 硫붿떆吏??Conventional Commits**: `feat: 濡쒓렇??API 援ы쁽`, `docs: ?ㅽ궎留?紐낆꽭 媛깆떊`.
-   愿???댁뒋媛 ?덉쑝硫?蹂몃Ц?대굹 ?쒕ぉ ?앹뿉 `(#5)` 泥섎읆 李몄“?쒕떎.
-3. **`main` 吏곸빱諛?湲덉? ??PR濡쒕쭔 癒몄??쒕떎.** PR 蹂몃Ц?먮뒗 媛쒖슂 / ?묒뾽 ?댁슜 / ?뚯뒪??諛⑸쾿???곷뒗??
-   湲곕뒫 ?⑥쐞濡?釉뚮옖移섎? 吏㏐쾶 ?좎??섍퀬, 癒몄? ??釉뚮옖移섎뒗 ??젣?쒕떎.
-4. 二쇱쓽: `{name}/feat` 泥섎읆 **?곸쐞 寃쎈줈? 媛숈? ?대쫫??釉뚮옖移섍? ?대? ?덉쑝硫??섏쐞 釉뚮옖移섎?
-   留뚮뱾 ???녿떎** (git ref 異⑸룎). ??긽 3???꾩껜 寃쎈줈濡?釉뚮옖移섎? 留뚮뱺??
+1. **스키마 정본은 Flyway.** `src/main/resources/db/migration/V{n}__{설명}.sql` 로만 변경한다.
+   **이미 적용된 마이그레이션 파일은 절대 수정 금지** — 변경은 새 버전(V2, V3...) 추가로만.
+   `jpa.hibernate.ddl-auto: validate` 를 유지한다 (JPA가 DDL을 만들지 않는다).
+2. **모든 API 응답은 `ApiResponse<T>`**, 목록은 `PageResponse<T>` 를 사용한다 (아래 4장).
+   Flutter 파싱 코드를 공유하기 위한 팀 규약이므로 예외 없이 지킨다.
+3. **예외는 `BusinessException` + `ErrorCode`** 로만 던진다. HTTP 상태로 변환은
+   `GlobalExceptionHandler` 가 담당한다. 에러 코드는 `{도메인 접두사}{3자리}` —
+   C(공통) / U(사용자·인증) / P(게시글) / E(지출·예산) / Y(정책) / L(장소).
+   도메인 작업 시 담당자가 본인 접두사 아래 코드를 추가한다.
+4. **비밀번호는 BCrypt 해시만 저장.** 평문 저장·로깅 금지. JWT 시크릿·DB 비밀번호 등
+   민감 값은 코드/커밋에 넣지 말고 환경변수(`DB_URL`/`DB_USERNAME`/`DB_PASSWORD` 등)로 주입한다.
+   `application-dev.yml` 의 기본값은 팀 공용 로컬 기준값이다.
+5. **DTO는 record + jakarta validation.** 요청/응답 필드에는 Swagger `@Schema`,
+   엔드포인트에는 `@Operation` 을 달아 문서만으로 API 계약을 확인할 수 있게 한다.
+6. **패키지 구조 준수**: `domain/<도메인>/{controller,service,repository,entity,dto}` +
+   `global/{config,common,exception}`. 신규 도메인은 `domain/user` 를 견본으로 삼는다.
+7. **한국어**: 주석·에러 메시지·API 설명은 한국어, 코드 식별자는 영어.
+8. 변경 후 `./gradlew build` 가 통과해야 한다 (Windows는 `gradlew.bat build`).
 
 ---
 
-## 4. API 怨듯넻 洹쒖빟
+## 3. 깃 공유 규칙
 
-### 4-1. ?묐떟 ?щ㎎ ??`global/common/ApiResponse.java`
+`SurvivalDiary_App` 과 동일한 규칙을 쓴다.
+
+1. **브랜치는 `{이름}/{타입}/{작업명}` 형식** (예: `kimin/feat/login-jwt`).
+   타입은 커밋 접두사와 동일하게 `feat`/`fix`/`docs`/`refactor`/`chore` 등.
+2. **커밋 메시지는 Conventional Commits**: `feat: 로그인 API 구현`, `docs: 스키마 명세 갱신`.
+   관련 이슈가 있으면 본문이나 제목 끝에 `(#5)` 처럼 참조한다.
+3. **`main` 직커밋 금지 — PR로만 머지한다.** PR 본문에는 개요 / 작업 내용 / 테스트 방법을 적는다.
+   기능 단위로 브랜치를 짧게 유지하고, 머지 후 브랜치는 삭제한다.
+4. 주의: `kimin/feat` 처럼 **상위 경로와 같은 이름의 브랜치가 이미 있으면 하위 브랜치를
+   만들 수 없다** (git ref 충돌). 항상 3단 전체 경로로 브랜치를 만든다.
+
+---
+
+## 4. API 공통 규약
+
+### 4-1. 응답 포맷 — `global/common/ApiResponse.java`
 
 ```json
-// ?깃났
+// 성공
 { "success": true, "data": { ... } }
 
-// ?ㅽ뙣
-{ "success": false, "error": { "code": "U001", "message": "?대? ?ъ슜 以묒씤 ?대찓?쇱엯?덈떎." } }
+// 실패
+{ "success": false, "error": { "code": "U001", "message": "이미 사용 중인 이메일입니다." } }
 ```
 
-### 4-2. ?섏씠吏???`global/common/PageResponse.java`
+### 4-2. 페이징 — `global/common/PageResponse.java`
 
-?붿껌: `?page=0&size=20&sort=createdAt,desc` (page 0遺?? size 湲곕낯 20쨌理쒕? 100)
+요청: `?page=0&size=20&sort=createdAt,desc` (page 0부터, size 기본 20·최대 100)
 
 ```json
 { "content": [ ... ], "page": 0, "size": 20, "totalElements": 42, "totalPages": 3, "hasNext": true }
 ```
 
-?ъ슜 ?? `PageResponse.from(repository.findAll(pageable).map(Dto::from))`
+사용 예: `PageResponse.from(repository.findAll(pageable).map(Dto::from))`
 
-### 4-3. ?꾩옱 ?뺤쓽???먮윭 肄붾뱶 ??`global/exception/ErrorCode.java`
+### 4-3. 현재 정의된 에러 코드 — `global/exception/ErrorCode.java`
 
-| 肄붾뱶 | HTTP | ?섎? |
+| 코드 | HTTP | 의미 |
 |---|---|---|
-| C001 | 400 | ?낅젰媛?寃利??ㅽ뙣 |
-| C002 | 401 | ?몄쬆 ?꾩슂 |
-| C003 | 403 | ?묎렐 沅뚰븳 ?놁쓬 |
-| C004 | 404 | 由ъ냼???놁쓬 |
-| C005 | 500 | ?쒕쾭 ?ㅻ쪟 |
-| U001 | 409 | ?대찓??以묐났 |
-| U002 | 401 | 濡쒓렇???ㅽ뙣 (?대찓??鍮꾨?踰덊샇 遺덉씪移? |
-| U003 | 401 | ?좏슚?섏? ?딆? ?좏겙 |
-| U004 | 401 | 留뚮즺???좏겙 |
-| U005 | 404 | ?ъ슜???놁쓬 |
+| C001 | 400 | 입력값 검증 실패 |
+| C002 | 401 | 인증 필요 |
+| C003 | 403 | 접근 권한 없음 |
+| C004 | 404 | 리소스 없음 |
+| C005 | 500 | 서버 오류 |
+| U001 | 409 | 이메일 중복 |
+| U002 | 401 | 로그인 실패 (이메일/비밀번호 불일치) |
+| U003 | 401 | 유효하지 않은 토큰 |
+| U004 | 401 | 만료된 토큰 |
+| U005 | 404 | 사용자 없음 |
 
 ---
 
-## 5. ?붾젆?곕━ 援ъ“
+## 5. 디렉터리 구조
 
 ```
 src/main/java/com/survivaldiary/
-?쒋? SurvivalDiaryApplication.java
-?쒋? global/
-?? ?쒋? config/        SecurityConfig(BCrypt, ?몄쬆 ?덉쇅 寃쎈줈) 쨌 SwaggerConfig(JWT bearer)
-?? ?붴? exception/     ErrorCode 쨌 BusinessException 쨌 GlobalExceptionHandler
-?쒋? domain/
-?? ?쒋? user/          ?뚯썝媛??援ы쁽?????좉퇋 ?꾨찓?몄쓽 寃щ낯
-?? ?? ?쒋? controller/ AuthController (POST /api/auth/signup)
-?? ?? ?쒋? service/    AuthService
-?? ?? ?쒋? repository/ UserRepository
-?? ?? ?쒋? entity/     User (Gender/Role enum ?ы븿)
-?? ?? ?붴? dto/        SignupRequest
-?? ?붴? diary 쨌 policy 쨌 place 쨌 post 쨌 image   (?대떦?먮퀎 ?묒뾽 ?덉젙)
-?붴? resources/
-   ?쒋? application.yml        怨듯넻 (profiles.default=dev, ddl-auto=validate)
-   ?쒋? application-dev.yml    濡쒖뺄 媛쒕컻??datasource (?섍꼍蹂?섎줈 ??뼱?곌린 媛??
-   ?붴? db/migration/          V1__init.sql (16媛??뚯씠釉?+ 移댄뀒怨좊━ ?쒕뱶)
+├─ SurvivalDiaryApplication.java
+├─ global/
+│  ├─ config/        SecurityConfig(BCrypt, 인증 예외 경로) · SwaggerConfig(JWT bearer)
+│  ├─ common/        ApiResponse · PageResponse · HealthController(GET /health)
+│  └─ exception/     ErrorCode · BusinessException · GlobalExceptionHandler
+├─ domain/
+│  ├─ user/          회원가입 구현됨 — 신규 도메인의 견본
+│  │  ├─ controller/ AuthController (POST /api/auth/signup)
+│  │  ├─ service/    AuthService
+│  │  ├─ repository/ UserRepository
+│  │  ├─ entity/     User (Gender/Role enum 포함)
+│  │  └─ dto/        SignupRequest
+│  └─ diary · policy · place · post · image   (담당자별 작업 예정)
+└─ resources/
+   ├─ application.yml        공통 (profiles.default=dev, ddl-auto=validate)
+   ├─ application-dev.yml    로컬 개발용 datasource (환경변수로 덮어쓰기 가능)
+   └─ db/migration/          V1__init.sql (16개 테이블 + 카테고리 시드)
 ```
 
+인증 예외 경로(permitAll): `/health`, `/api/auth/**`, Swagger 경로. 나머지는 인증 필요.
 
 ---
 
-## 6. 濡쒖뺄 ?ㅽ뻾
+## 6. 로컬 실행
 
-MySQL 8.x媛 濡쒖뺄 3306?????덇퀬 `survival_diary` ?곗씠?곕쿋?댁뒪媛 ?덉뼱???쒕떎
+MySQL 8.x가 로컬 3306에 떠 있고 `survival_diary` 데이터베이스가 있어야 한다
 (`CREATE DATABASE survival_diary CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`).
-?ㅽ궎留덈뒗 ?쒕쾭 湲곕룞 ??Flyway媛 ?먮룞 ?곸슜?쒕떎.
+스키마는 서버 기동 시 Flyway가 자동 적용한다.
 
 ```bash
 ./gradlew bootRun
 ```
 
-?묒냽 ?뺣낫媛 湲곕낯媛?root/root1234)怨??ㅻⅤ硫??섍꼍蹂?섎줈 二쇱엯?쒕떎:
-`DB_PASSWORD=?대퉬諛踰덊샇 ./gradlew bootRun` (Windows PowerShell: `$env:DB_PASSWORD='?대퉬諛踰덊샇'; .\gradlew.bat bootRun`)
+접속 정보가 기본값(root/root1234)과 다르면 환경변수로 주입한다:
+`DB_PASSWORD=내비밀번호 ./gradlew bootRun` (Windows PowerShell: `$env:DB_PASSWORD='내비밀번호'; .\gradlew.bat bootRun`)
 
-- API ?뚯뒪?몃뒗 **Swagger UI ?ъ슜??沅뚯옣** ??Windows 肄섏넄 curl? ?쒓? body媛 CP949濡?
-  源⑥졇 400/500???????덈떎 (UTF-8 ?뚯씪 + `--data-binary @file` 濡??고쉶 媛??.
-- 8080 ?ы듃媛 ?대? ?ъ슜 以묒씠硫??댁쟾 ?쒕쾭 ?꾨줈?몄뒪媛 ?⑥? 寃???醫낅즺 ???ш린?숉븳??
+- 헬스체크: GET http://localhost:8080/health → `{"status":"UP"}`
+- API 테스트는 **Swagger UI 사용을 권장** — Windows 콘솔 curl은 한글 body가 CP949로
+  깨져 400/500이 날 수 있다 (UTF-8 파일 + `--data-binary @file` 로 우회 가능).
+- 8080 포트가 이미 사용 중이면 이전 서버 프로세스가 남은 것 — 종료 후 재기동한다.
 
 ---
 
-## 7. ?댁뒋 ?몃옒而?
+## 7. 이슈 트래커
 
-?묒뾽 ?⑥쐞??GitHub ?댁뒋濡?遺꾨같?섏뼱 ?덈떎 (`KwanEon/SurvivalDiary_WebBackend`).
-愿由ъ옄 ???꾨줎?몄뿏?쒕뒗 蹂꾨룄 ??μ냼(`KwanEon/SurvivalDiary_WebFrontend`)?먯꽌 吏꾪뻾?섎ŉ,
-?댁뒋??諛깆뿏???꾨줎?몄뿏????μ냼??媛곴컖 援щ텇???깅줉?쒕떎.
-?쒕쾭 怨듯넻 ?명똿(#1~#4)? ?꾨즺. ?몄쬆(#5~#6) ???대?吏 ?낅줈??#7) ??而ㅻ??덊떚(#8~#9) ?쒖쑝濡?吏꾪뻾?섎ŉ,
-而ㅻ??덊떚 ?꾨찓??肄붾뱶媛 ????꾨찓???묒뾽???ъ슜 ?덉떆媛 ?쒕떎.
+작업 단위는 GitHub 이슈로 분배되어 있다 (`KwanEon/SurvivalDiary_WebBackend`).
+관리자 웹 프론트엔드는 별도 저장소(`KwanEon/SurvivalDiary_WebFrontend`)에서 진행하며,
+이슈도 백엔드/프론트엔드 저장소에 각각 구분해 등록한다.
+서버 공통 세팅(#1~#4)은 완료. 인증(#5~#6) → 이미지 업로드(#7) → 커뮤니티(#8~#9) 순으로 진행하며,
+커뮤니티 도메인 코드가 팀원 도메인 작업의 사용 예시가 된다.
 
 ---
 
 ## Git branch ownership rule
 
-- 紐⑤뱺 ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`{name}/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
-- `main`?먮뒗 ?덈? 吏곸젒 而ㅻ컠?섍굅??吏곸젒 push?섏? ?딅뒗??
-- 紐⑤뱺 蹂寃??ы빆? ?묒뾽 釉뚮옖移섏뿉 push????PR濡쒕쭔 `main`??諛섏쁺?쒕떎.
-- 而ㅻ컠 硫붿떆吏??Conventional Commits ?뺤떇???ъ슜?쒕떎. ?? `feat: add email signup api`.
+- Jade Cohen / ligr00vefe@naver.com 작업자는 `kimin`으로 식별한다.
+- 모든 작업 브랜치는 반드시 `{name}/{type}/{task}` 형식을 사용한다.
+- kimin 작업 브랜치는 반드시 `kimin/{type}/{task}` 형식을 사용한다.
+- 허용 예시: `kimin/feat/signup-api`, `kimin/fix/auth-token`, `kimin/chore/initial-backend-snapshot`.
+- `main`에는 절대 직접 커밋하거나 직접 push하지 않는다.
+- 모든 변경 사항은 작업 브랜치에 push한 뒤 PR로만 `main`에 반영한다.
+- 커밋 메시지는 Conventional Commits 형식을 사용한다. 예: `feat: add email signup api`.
