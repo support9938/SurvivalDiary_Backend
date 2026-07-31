@@ -1,0 +1,37 @@
+{
+  "result": {
+    "paging": {
+      "pageNum": 1,
+      "pageSize": 20
+    },
+    "policies": [
+      {
+        "plcyNo": "R202607310001",
+        "plcyNm": "청년 주거 지원",
+        "plcyExplnCn": "청년의 주거비 부담을 줄이기 위한 정책입니다.",
+        "lclsfNm": "주거",
+        "mclsfNm": "전월세 및 주거급여 지원",
+        "plcyKywdNm": "청년,주거,월세",
+        "plcySprtCn": "월세 일부를 지원합니다.",
+        "zipCd": "11680",
+        "sprtTrgtMinAge": "19",
+        "sprtTrgtMaxAge": "34",
+        "sprtTrgtAgeLmtYn": "Y",
+        "jobCd": "0013010",
+        "earnCndSeCd": "0043001",
+        "aplyYmd": "20260701~20260731",
+        "sprvsnInstCdNm": "주관 기관"
+      },
+      {
+        "plcyNo": "R202607310002",
+        "plcyNm": "청년 취업 지원",
+        "lclsfNm": "일자리",
+        "mclsfNm": "취업",
+        "zipCd": "11680",
+        "sprtTrgtAgeLmtYn": "N",
+        "jobCd": "0013003",
+        "earnCndSeCd": "0043003"
+      }
+    ]
+  }
+}

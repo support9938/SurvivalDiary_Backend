@@ -393,8 +393,8 @@ frstRegDt
 - [x] 요청 계약·오류 처리·fixture 역직렬화 테스트
 - [ ] 실제 성공 목록 응답 래퍼 DTO 확정
 - [ ] 실제 성공 상세 응답 래퍼 DTO 확정
-- [ ] 제공처 응답을 앱용 정책 DTO로 변환
-- [ ] 앱에서 호출할 내부 정책 REST API 구현
+- [x] 제공처 응답을 앱용 정책 DTO로 변환
+- [x] 앱에서 호출할 내부 정책 REST API 구현
 
 승인된 인증키는 파일에 저장하지 않고 실행 환경에 다음과 같이 등록한다.
 
@@ -404,3 +404,127 @@ YOUTH_POLICY_API_KEY={승인된 인증키}
 
 성공 응답 래퍼와 페이지 메타데이터가 확인되기 전까지 클라이언트는 JSON 트리를 반환한다.
 승인 후 실제 목록·상세 응답 원문을 확보하면 외부 응답 래퍼 DTO로 교체하고 내부 변환 단계로 진행한다.
+
+## 13. 단계 3 실시간 조회 계약
+
+### 13.1 선택한 방식
+
+맞춤 정책 1차 연동은 요청 시점마다 생존일기 백엔드가 온통청년 API를 호출한다.
+외부 원문을 앱에 직접 반환하지 않고 `PolicySummary`, `PolicyDetail` 내부 DTO로 변환한다.
+나중에 캐시나 DB 동기화 방식으로 변경해도 앱 API 계약을 유지하는 것이 목적이다.
+
+맞춤 조건에는 나이·취업·소득 정보가 포함되므로 URL 쿼리 문자열 대신 JSON 본문을 사용한다.
+정책 endpoint는 기존 보안 설정을 유지해 로그인 사용자만 호출할 수 있다.
+
+```text
+앱
+  → POST /api/policies/search
+  → 생존일기 백엔드
+  → GET 온통청년 정책 API(최대 3페이지)
+  → 조건 판정 및 내부 DTO 변환
+  → ApiResponse<PolicySearchResponse>
+```
+
+### 13.2 맞춤 정책 검색
+
+```http
+POST /api/policies/search
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+
+```json
+{
+  "age": 27,
+  "regionCode": "11",
+  "districtCode": "11680",
+  "employmentStatus": "JOB_SEEKING",
+  "incomeRange": "BELOW_100",
+  "category": "HOUSING",
+  "size": 20
+}
+```
+
+| 필드 | 필수 | 규칙 |
+|---|---:|---|
+| `age` | Y | 만 18~39세 |
+| `regionCode` | Y | 숫자 2자리 |
+| `districtCode` | N | 숫자 5자리, 앞 2자리가 `regionCode`와 일치 |
+| `employmentStatus` | Y | `EMPLOYED`, `JOB_SEEKING`, `UNEMPLOYED`, `STUDENT` |
+| `incomeRange` | N | `BELOW_50`, `BELOW_100`, `BELOW_150`, `NO_LIMIT` |
+| `category` | N | `HOUSING`, `EMPLOYMENT`, `ASSET`, `CULTURE`, `TRANSPORT` |
+| `size` | N | 기본 20, 최대 20 |
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "policyId": "R202607310001",
+        "category": "전월세 및 주거급여 지원",
+        "categoryType": "HOUSING",
+        "title": "청년 주거 지원",
+        "summary": "정책 설명",
+        "supportAmount": null,
+        "supportText": "지원 내용",
+        "applicationPeriodText": "20260701~20260731",
+        "target": "만 19~34세",
+        "agency": "주관 기관",
+        "eligibilityStatus": "CHECK_REQUIRED",
+        "eligibilityReasons": [
+          "중위소득 조건을 공고문에서 확인해야 합니다."
+        ]
+      }
+    ],
+    "partialResult": true,
+    "checkedProviderPages": 3
+  }
+}
+```
+
+`partialResult=true`는 요청한 개수보다 일치 결과가 많거나, 최대 3페이지를 확인한 뒤에도
+온통청년에 다음 후보 페이지가 있을 가능성을 뜻한다.
+외부 전체 건수 계약이 확인되지 않았으므로 내부 `totalElements`, `totalPages`를 임의로 만들지 않는다.
+
+### 13.3 정책 상세
+
+```http
+GET /api/policies/{policyId}
+Authorization: Bearer {accessToken}
+```
+
+정책 번호는 문자열로 유지한다.
+상세 응답은 신청 방법, 제출 서류, 주관·운영 기관, 공식 신청 URL과 참고 URL을 포함한다.
+URL은 `http` 또는 `https` 형식이 유효한 경우만 반환한다.
+
+### 13.4 조건 판정
+
+- 구조화 필드로 명확하게 불일치하면 목록에서 제외한다.
+- 소득 등 정확하게 변환할 수 없는 조건은 제외하지 않고 `CHECK_REQUIRED`로 포함한다.
+- `CHECK_REQUIRED` 정책은 `eligibilityReasons`로 사용자가 확인할 항목을 안내한다.
+- 구조화된 지원금 필드가 없으므로 `supportAmount`는 `null`이다.
+- 신청 기간은 안전한 종료일 파싱 전까지 `applicationPeriodText` 원문으로 반환한다.
+
+### 13.5 실제 제공처 계약 테스트
+
+실제 인증키가 있는 서버에서만 다음 테스트를 명시적으로 실행한다.
+일반 단위 테스트나 키가 없는 개발 환경에서는 자동으로 건너뛴다.
+
+```powershell
+$env:RUN_YOUTH_POLICY_LIVE_TEST='true'
+.\gradlew.bat test --tests "com.survivaldiary.domain.policy.client.YouthPolicyLiveContractTest"
+Remove-Item Env:RUN_YOUTH_POLICY_LIVE_TEST
+```
+
+테스트는 인증키나 정책 원문 값을 출력하지 않는다.
+최상위 JSON 타입, 최상위 필드 이름, 변환된 정책 개수와 정책 번호 존재 여부만 확인한다.
+
+### 13.6 남은 확인 사항
+
+- [ ] 서버에서 실제 성공 목록 계약 테스트 실행
+- [ ] 성공 응답의 최상위 래퍼와 페이지 메타데이터 확인
+- [ ] 실제 상세 성공 응답 구조 확인
+- [ ] 온통청년 호출 제한 확인 후 최대 3페이지 값 재검토
+- [ ] 폐지·미등록 지역 코드 검증 자료를 백엔드에 둘지 결정
+- [ ] 앱에서 `CHECK_REQUIRED`와 `partialResult` 표시 구현
