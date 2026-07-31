@@ -15,3 +15,11 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-validity-ms: 3600000      # 액세스 토큰 1시간
   refresh-token-validity-ms: 1209600000  # 리프레시 토큰 2주
+
+policy:
+  provider:
+    base-url: https://www.youthcenter.go.kr
+    # 온통청년에서 승인된 인증키를 환경변수로만 주입한다. 저장소에는 실제 값을 기록하지 않는다.
+    api-key: ${YOUTH_POLICY_API_KEY:}
+    connect-timeout: 2s
+    read-timeout: 5s
