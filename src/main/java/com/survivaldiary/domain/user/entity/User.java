@@ -37,6 +37,9 @@ public class User {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(length = 20)
+    private String phone;
+
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
@@ -58,12 +61,13 @@ public class User {
     private LocalDateTime createdAt;
 
     @Builder
-    private User(String email, String password, String name,
+    private User(String email, String password, String name, String phone,
                  LocalDate birthDate, Gender gender, String region,
                  String signupInterest, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
+        this.phone = phone;
         this.birthDate = birthDate;
         this.gender = gender;
         this.region = region;
