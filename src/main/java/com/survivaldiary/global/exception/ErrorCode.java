@@ -27,7 +27,21 @@ public enum ErrorCode {
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "U002", "이메일 또는 비밀번호가 올바르지 않습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "U003", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "U004", "만료된 토큰입니다."),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U005", "사용자를 찾을 수 없습니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U005", "사용자를 찾을 수 없습니다."),
+
+    // 정책
+    POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "Y001", "정책을 찾을 수 없습니다."),
+    POLICY_PROVIDER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Y002",
+            "정책 정보를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
+    ),
+    POLICY_PROVIDER_BAD_RESPONSE(
+            HttpStatus.BAD_GATEWAY,
+            "Y003",
+            "정책 제공처 응답을 처리할 수 없습니다."
+    ),
+    INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String code;
