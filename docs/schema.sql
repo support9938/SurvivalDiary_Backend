@@ -44,6 +44,21 @@ CREATE TABLE user_profiles (
     REFERENCES users (user_id) ON DELETE CASCADE
 ) COMMENT '사용자 프로필 (ERD의 나이 컬럼은 users.birth_date에서 계산하므로 제거)';
 
+-- 맞춤 정책 기본 조건 — users와 1:1
+CREATE TABLE user_policy_preferences (
+  user_id            BIGINT UNSIGNED NOT NULL,
+  region_code        CHAR(2)         NOT NULL COMMENT '법정동 시도 코드 앞 2자리',
+  district_code      CHAR(5)         NULL COMMENT '법정동 시군구 코드 앞 5자리',
+  employment_status  VARCHAR(30)     NOT NULL COMMENT '취업 상태 코드',
+  income_range       VARCHAR(30)     NULL COMMENT '소득 구간, 무관이면 NULL',
+  category           VARCHAR(30)     NULL COMMENT '정책 분야, 전체면 NULL',
+  created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '최초 저장 시각',
+  updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 변경 시각',
+  PRIMARY KEY (user_id),
+  CONSTRAINT fk_user_policy_preferences_user FOREIGN KEY (user_id)
+    REFERENCES users (user_id) ON DELETE CASCADE
+) COMMENT '사용자별 맞춤 정책 기본 조건';
+
 -- 사용자 위치 설정 (UserLocation)
 CREATE TABLE user_locations (
   location_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

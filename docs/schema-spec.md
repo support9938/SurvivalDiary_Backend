@@ -4,9 +4,9 @@
 |---|---|
 | DBMS | MySQL 8.x |
 | 문자셋 | `utf8mb4` / `utf8mb4_unicode_ci` |
-| 스키마 정본 | `src/main/resources/db/migration/V1__init.sql` (Flyway) |
-| 기준 버전 | V1 (2026-07-28) |
-| 테이블 수 | 16 |
+| 스키마 정본 | `src/main/resources/db/migration/` 전체 (Flyway) |
+| 기준 버전 | V8 (2026-08-03) |
+| 테이블 수 | 17 |
 
 > 스키마 변경은 이 문서 수정이 아니라 **새 Flyway 마이그레이션(V2, V3…) 추가**로 한다.
 > 적용된 마이그레이션 파일은 수정 금지. 변경 후 이 문서를 함께 갱신한다.
@@ -27,6 +27,7 @@
 ```mermaid
 erDiagram
     users ||--o| user_profiles : "1:1"
+    users ||--o| user_policy_preferences : "정책 기본 조건"
     users ||--o{ user_locations : ""
     users ||--o{ budgets : ""
     users ||--o{ expenses : ""
@@ -74,6 +75,21 @@ erDiagram
 | job | VARCHAR(50) | Y | | | 직업 |
 | bio | VARCHAR(500) | Y | | | 소개 |
 | profile_image_url | VARCHAR(500) | Y | | | 프로필 이미지 URL |
+
+### user_policy_preferences — 맞춤 정책 기본 조건 (users 1:1)
+
+| 컬럼 | 타입 | Null | 키/제약 | 기본값 | 설명 |
+|---|---|---|---|---|---|
+| user_id | BIGINT UNSIGNED | N | PK, FK(users), CASCADE | | 로그인 사용자 ID |
+| region_code | CHAR(2) | N | | | 법정동 시도 코드 앞 2자리 |
+| district_code | CHAR(5) | Y | | | 법정동 시군구 코드 앞 5자리, 시도 전체면 NULL |
+| employment_status | VARCHAR(30) | N | | | 취업 상태 코드 |
+| income_range | VARCHAR(30) | Y | | | 소득 구간, 무관이면 NULL |
+| category | VARCHAR(30) | Y | | | 정책 분야, 전체면 NULL |
+| created_at | DATETIME | N | | NOW | 최초 저장 시각 |
+| updated_at | DATETIME | N | | NOW | 마지막 변경 시각 |
+
+나이는 시간에 따라 바뀌므로 이 테이블에 저장하지 않고 `users.birth_date`에서 계산한다.
 
 ### user_locations — 사용자 위치 설정
 
