@@ -12,6 +12,7 @@ public record ExpenseResponse(
         LocalDateTime spentAt,
         String memo,
         Expense.EntryType entryType,
+        String notificationSource,
         LocalDateTime createdAt
 ) {
 
@@ -25,6 +26,7 @@ public record ExpenseResponse(
                 expense.getSpentAt(),
                 expense.getMemo(),
                 expense.getEntryType(),
+                expense.getNotificationSource(),
                 expense.getCreatedAt()
         );
     }

@@ -1,5 +1,6 @@
 package com.survivaldiary.domain.expense.service;
 
+import com.survivaldiary.domain.expense.dto.CreateAutoExpenseRequest;
 import com.survivaldiary.domain.expense.dto.CreateExpenseRequest;
 import com.survivaldiary.domain.expense.dto.ExpenseResponse;
 import com.survivaldiary.domain.expense.entity.Expense;
@@ -74,5 +75,47 @@ public class ExpenseService {
                 memo
         );
         return ExpenseResponse.from(expenseRepository.save(expense));
+    }
+
+    @Transactional
+    public ExpenseResponse createAutoExpense(
+            Long authenticatedUserId,
+            CreateAutoExpenseRequest request) {
+        validateOwner(authenticatedUserId, request.userId());
+        if (!userRepository.existsById(authenticatedUserId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        String detectionKey = request.detectionKey().trim();
+        return expenseRepository
+                .findByUserIdAndDetectionKey(authenticatedUserId, detectionKey)
+                .map(ExpenseResponse::from)
+                .orElseGet(() -> {
+                    String memo = normalizeMemo(request.memo());
+                    Expense expense = Expense.auto(
+                            authenticatedUserId,
+                            request.categoryId(),
+                            request.title().trim(),
+                            request.amount(),
+                            request.spentAt(),
+                            memo,
+                            request.notificationSource().trim(),
+                            detectionKey
+                    );
+                    return ExpenseResponse.from(expenseRepository.save(expense));
+                });
+    }
+
+    private void validateOwner(Long authenticatedUserId, Long requestedUserId) {
+        if (!Objects.equals(authenticatedUserId, requestedUserId)) {
+            throw new BusinessException(
+                    ErrorCode.FORBIDDEN,
+                    "본인의 지출 내역만 저장할 수 있습니다."
+            );
+        }
+    }
+
+    private String normalizeMemo(String memo) {
+        return memo == null || memo.isBlank() ? null : memo.trim();
     }
 }

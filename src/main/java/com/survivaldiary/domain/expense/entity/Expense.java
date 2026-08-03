@@ -53,11 +53,18 @@ public class Expense {
     @Column(name = "receipt_image_url", length = 500)
     private String receiptImageUrl;
 
+    @Column(name = "notification_source", length = 100)
+    private String notificationSource;
+
+    @Column(name = "detection_key", length = 64)
+    private String detectionKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     private Expense(Long userId, Long categoryId, String title, Integer amount,
-                    LocalDateTime spentAt, String memo, EntryType entryType) {
+                    LocalDateTime spentAt, String memo, EntryType entryType,
+                    String notificationSource, String detectionKey) {
         this.userId = userId;
         this.categoryId = categoryId;
         this.title = title;
@@ -65,6 +72,8 @@ public class Expense {
         this.spentAt = spentAt;
         this.memo = memo;
         this.entryType = entryType;
+        this.notificationSource = notificationSource;
+        this.detectionKey = detectionKey;
     }
 
     public static Expense manual(Long userId, Long categoryId, String title,
@@ -76,7 +85,25 @@ public class Expense {
                 amount,
                 spentAt,
                 memo,
-                EntryType.MANUAL
+                EntryType.MANUAL,
+                null,
+                null
+        );
+    }
+
+    public static Expense auto(Long userId, Long categoryId, String title,
+                               Integer amount, LocalDateTime spentAt, String memo,
+                               String notificationSource, String detectionKey) {
+        return new Expense(
+                userId,
+                categoryId,
+                title,
+                amount,
+                spentAt,
+                memo,
+                EntryType.AUTO,
+                notificationSource,
+                detectionKey
         );
     }
 
