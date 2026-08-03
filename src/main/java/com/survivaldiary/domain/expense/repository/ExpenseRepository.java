@@ -10,4 +10,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findAllByUserIdOrderBySpentAtDesc(Long userId);
 
     Optional<Expense> findByIdAndUserId(Long id, Long userId);
+
+    Optional<Expense> findByUserIdAndDetectionKey(Long userId, String detectionKey);
 }

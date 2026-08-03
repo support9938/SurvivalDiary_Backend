@@ -121,11 +121,14 @@ erDiagram
 | expense_id | BIGINT UNSIGNED | N | PK, AI | | |
 | user_id | BIGINT UNSIGNED | N | FK(users), CASCADE | | |
 | category_id | BIGINT UNSIGNED | N | FK(categories), IDX | | |
+| title | VARCHAR(100) | N | | | 지출 내용 또는 감지된 가맹점명 |
 | amount | INT UNSIGNED | N | | | 금액 (원) |
 | spent_at | DATETIME | N | IDX(user_id, spent_at) | | 지출일시 |
 | memo | VARCHAR(200) | Y | | | 내용 (메모) |
 | payment_method | VARCHAR(30) | Y | | | `CARD` / `CASH` / `TRANSFER` 등 |
 | entry_type | VARCHAR(10) | N | | `MANUAL` | `AUTO`(알림 감지) / `MANUAL`(직접 등록) |
+| notification_source | VARCHAR(100) | Y | | | 자동 감지 결제 알림 출처 |
+| detection_key | VARCHAR(64) | Y | UK(user_id, detection_key) | | 사용자별 알림 중복 방지 키 |
 | receipt_image_url | VARCHAR(500) | Y | | | 영수증 이미지 URL (선택) |
 | created_at | DATETIME | N | | NOW | 등록일 |
 
