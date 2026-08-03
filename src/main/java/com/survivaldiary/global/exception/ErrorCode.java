@@ -41,7 +41,20 @@ public enum ErrorCode {
             "Y003",
             "정책 제공처 응답을 처리할 수 없습니다."
     ),
-    INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다.");
+    INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다."),
+
+    // 장소 / 지도
+    MAP_PROVIDER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "L001",
+            "지도 정보를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
+    ),
+    MAP_PROVIDER_BAD_RESPONSE(
+            HttpStatus.BAD_GATEWAY,
+            "L002",
+            "지도 정보 제공처 응답을 처리할 수 없습니다."
+    ),
+    INVALID_MAP_FILTER(HttpStatus.BAD_REQUEST, "L003", "지도 검색 조건이 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String code;
