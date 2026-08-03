@@ -5,6 +5,9 @@ import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 import tools.jackson.databind.JsonNode;
 
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +28,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+@ExtendWith(OutputCaptureExtension.class)
 class YouthPolicyClientTest {
 
     private YouthPolicyProperties properties;
@@ -104,7 +109,7 @@ class YouthPolicyClientTest {
     }
 
     @Test
-    void 인증키_거절은_안전한_제공처_장애로_변환한다() {
+    void 인증키_거절은_원인만_기록하고_안전한_제공처_장애로_변환한다(CapturedOutput output) {
         server.expect(request -> {
                 })
                 .andRespond(withStatus(HttpStatus.FORBIDDEN)
@@ -119,6 +124,10 @@ class YouthPolicyClientTest {
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
         assertThat(exception.getMessage()).doesNotContain("invalid api key");
         assertThat(exception.getMessage()).doesNotContain("test-api-key");
+        assertThat(output.getOut())
+                .contains("operation=SEARCH, reason=AUTH_REJECTED, status=403")
+                .doesNotContain("invalid api key")
+                .doesNotContain("test-api-key");
         server.verify();
     }
 
@@ -153,7 +162,7 @@ class YouthPolicyClientTest {
     }
 
     @Test
-    void 인증키가_없으면_HTTP_요청_전에_안전하게_실패한다() {
+    void 인증키가_없으면_HTTP_요청_전에_원인을_기록하고_안전하게_실패한다(CapturedOutput output) {
         properties.setApiKey(" ");
 
         BusinessException exception = assertThrows(
@@ -162,6 +171,31 @@ class YouthPolicyClientTest {
         );
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+        assertThat(output.getOut())
+                .contains("operation=SEARCH, reason=API_KEY_MISSING")
+                .doesNotContain("apiKeyNm");
+        server.verify();
+    }
+
+    @Test
+    void 읽기_시간_초과는_예외_메시지나_인증키_없이_원인만_기록한다(CapturedOutput output) {
+        server.expect(request -> {
+                })
+                .andRespond(request -> {
+                    throw new SocketTimeoutException("Read timed out: test-api-key");
+                });
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> client.search(defaultSearchRequest())
+        );
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+        assertThat(output.getOut())
+                .contains("operation=SEARCH, reason=READ_TIMEOUT")
+                .doesNotContain("Read timed out")
+                .doesNotContain("test-api-key")
+                .doesNotContain("apiKeyNm");
         server.verify();
     }
 

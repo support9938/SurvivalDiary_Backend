@@ -358,6 +358,28 @@ frstRegDt
 
 외부 `errorCode`, `errorMsg` 원문과 인증키가 사용자 응답이나 일반 로그에 그대로 노출되지 않게 한다.
 
+### 10-1. 제공처 진단 로그
+
+정책 제공처 호출 실패 시 인증키, 전체 요청 URL, 외부 응답 본문, 예외 메시지는 기록하지 않는다.
+서버 로그의 `operation`, `reason`, `status`만으로 다음 원인을 구분한다.
+
+| reason | 의미 | 우선 확인 항목 |
+|---|---|---|
+| `API_KEY_MISSING` | 실행 중인 서버 프로세스에 인증키가 없음 | `YOUTH_POLICY_API_KEY` 환경변수와 서버 재시작 |
+| `AUTH_REJECTED` | 제공처가 인증 요청을 401 또는 403으로 거절 | 인증키 승인 상태와 발급 API 종류 |
+| `PROVIDER_SERVER_ERROR` | 제공처가 5xx 응답을 반환 | 온통청년 장애 여부와 재시도 시점 |
+| `CONNECT_TIMEOUT` | 제공처 연결 제한시간 초과 | 서버 PC의 DNS·방화벽·외부 통신 |
+| `READ_TIMEOUT` | 연결 후 응답 제한시간 초과 | 제공처 응답 지연 여부 |
+| `NETWORK_TIMEOUT` | 연결·읽기 단계를 구분할 수 없는 시간 초과 | 서버 네트워크와 제공처 응답 지연 |
+| `DNS_FAILURE` | 제공처 도메인 해석 실패 | 서버 PC의 DNS 설정 |
+| `CONNECTION_FAILURE` | 제공처 연결 거절 또는 네트워크 연결 실패 | 방화벽·프록시·외부 통신 |
+| `RESOURCE_ACCESS_FAILURE` | 분류하지 못한 네트워크 접근 실패 | 서버 네트워크와 제공처 상태 |
+| `NULL_RESPONSE` | 제공처 응답 본문이 없음 | 제공처 응답 상태와 계약 변경 여부 |
+| `RESPONSE_PROCESSING_FAILURE` | 제공처 응답 변환 실패 | JSON 구조와 응답 Content-Type |
+| `UNEXPECTED_HTTP_STATUS` | 별도로 분류하지 않은 HTTP 오류 | 상태 코드와 제공처 공지 |
+
+`operation=SEARCH`는 목록 조회, `operation=DETAIL`은 상세 조회를 뜻한다.
+
 ## 11. 단계 2 진입 전 확인 항목
 
 - [x] 공식 정책 endpoint 확인
