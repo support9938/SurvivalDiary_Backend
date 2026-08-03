@@ -39,3 +39,4 @@ out/
 ### Local secrets ###
 application-secret.yml
 src/main/resources/application-secret.yml.example
+src/main/resources/application-secret.yml.example

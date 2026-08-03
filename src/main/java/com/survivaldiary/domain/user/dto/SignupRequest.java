@@ -28,7 +28,7 @@ public record SignupRequest(
         String name,
 
         @Schema(description = "Phone number", example = "01012345678")
-        @NotBlank(message = "Phone number is required.")
+//        @NotBlank(message = "Phone number is required.")
         @Size(min = 10, max = 11, message = "Phone number must contain 10 to 11 digits.")
         @Pattern(regexp = "\\d{10,11}", message = "Phone number must contain digits only.")
         String phone,
