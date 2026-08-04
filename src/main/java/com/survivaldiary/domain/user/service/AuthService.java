@@ -5,6 +5,7 @@ import com.survivaldiary.domain.user.dto.RefreshTokenRequest;
 import com.survivaldiary.domain.user.dto.SignupRequest;
 import com.survivaldiary.domain.user.dto.SocialLoginRequest;
 import com.survivaldiary.domain.user.dto.TokenResponse;
+import com.survivaldiary.domain.user.dto.WebSocialLoginRequest;
 import com.survivaldiary.domain.user.entity.RefreshToken;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.entity.User;
@@ -13,6 +14,7 @@ import com.survivaldiary.domain.user.repository.SocialAccountRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.domain.user.social.SocialProfile;
 import com.survivaldiary.domain.user.social.SocialProfileVerifier;
+import com.survivaldiary.domain.user.social.SocialOAuthTokenClient;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import com.survivaldiary.global.security.JwtTokenProvider;
@@ -36,6 +38,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenHasher refreshTokenHasher;
     private final SocialProfileVerifier socialProfileVerifier;
+    private final SocialOAuthTokenClient socialOAuthTokenClient;
 
     @Transactional
     public Long signup(SignupRequest request) {
@@ -92,6 +95,15 @@ public class AuthService {
                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)))
                 .orElseGet(() -> createSocialUser(provider, profile));
         return issueTokens(user);
+    }
+
+    @Transactional
+    public TokenResponse webSocialLogin(
+            SocialAccount.Provider provider,
+            WebSocialLoginRequest request
+    ) {
+        String accessToken = socialOAuthTokenClient.exchange(provider, request);
+        return socialLogin(provider, new SocialLoginRequest(accessToken));
     }
 
     private User createSocialUser(
