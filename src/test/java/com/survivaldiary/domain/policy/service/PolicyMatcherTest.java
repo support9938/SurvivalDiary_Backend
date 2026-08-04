@@ -5,6 +5,8 @@ import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PolicyMatcherTest {
@@ -114,7 +116,8 @@ class PolicyMatcherTest {
                 20,
                 null,
                 null,
-                null
+                null,
+                Set.of()
         );
     }
 
@@ -135,7 +138,8 @@ class PolicyMatcherTest {
                 20,
                 workStatus,
                 null,
-                educationStatus
+                educationStatus,
+                Set.of()
         );
     }
 

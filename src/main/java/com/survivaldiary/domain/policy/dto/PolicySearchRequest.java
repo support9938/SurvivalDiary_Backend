@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 @Schema(description = "맞춤 정책 검색 요청")
 public record PolicySearchRequest(
 
@@ -84,11 +87,22 @@ public record PolicySearchRequest(
                 regexp = "STUDENT|ON_LEAVE|GRADUATED|NOT_STUDENT|OTHER",
                 message = "교육 상태 값이 올바르지 않습니다."
         )
-        String educationStatus
+        String educationStatus,
+
+        @Schema(description = "추천에 사용할 복수 관심 주제. 빈 배열이면 관심 주제 가중치를 적용하지 않음")
+        @Size(max = 10, message = "관심 주제는 10개 이하로 선택해야 합니다.")
+        Set<@Pattern(
+                regexp = "EMPLOYMENT|HOUSING|EDUCATION|WELFARE_CULTURE|"
+                        + "PARTICIPATION_RIGHTS|ASSET_BUILDING|TRANSPORT",
+                message = "관심 주제 값이 올바르지 않습니다."
+        ) String> interests
 ) {
 
     public PolicySearchRequest {
         keyword = normalize(keyword);
+        interests = interests == null
+                ? Set.of()
+                : Set.copyOf(new LinkedHashSet<>(interests));
     }
 
     public int requestedSize() {
@@ -128,6 +142,10 @@ public record PolicySearchRequest(
 
     public int requestedPage() {
         return page == null ? 1 : page;
+    }
+
+    public Set<String> requestedInterests() {
+        return interests;
     }
 
     private static String normalize(String value) {

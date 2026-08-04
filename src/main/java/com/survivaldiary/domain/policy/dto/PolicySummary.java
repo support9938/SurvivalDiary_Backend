@@ -17,6 +17,8 @@ public record PolicySummary(
         @Schema(description = "지원 대상 요약") String target,
         @Schema(description = "주관 기관") String agency,
         @Schema(description = "조건 일치 판정") PolicyEligibilityStatus eligibilityStatus,
-        @Schema(description = "직접 확인이 필요한 이유") List<String> eligibilityReasons
+        @Schema(description = "직접 확인이 필요한 이유") List<String> eligibilityReasons,
+        @Schema(description = "맞춤 추천 표시 상태") PolicyRecommendationStatus recommendationStatus,
+        @Schema(description = "추천 또는 확인 필요 이유") List<String> recommendationReasons
 ) {
 }

@@ -7,6 +7,7 @@ import com.survivaldiary.domain.policy.client.dto.YouthPolicySearchRequest;
 import com.survivaldiary.domain.policy.dto.PolicyCategory;
 import com.survivaldiary.domain.policy.dto.PolicyDetail;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
+import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import com.survivaldiary.domain.policy.dto.PolicySummary;
 import com.survivaldiary.global.exception.BusinessException;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,6 +35,7 @@ class PolicyServiceTest {
     private YouthPolicyResponseParser parser;
     private PolicyMatcher matcher;
     private PolicyMapper mapper;
+    private PolicyRecommendationEvaluator recommendationEvaluator;
     private PolicyService service;
 
     @BeforeEach
@@ -41,7 +44,14 @@ class PolicyServiceTest {
         parser = mock(YouthPolicyResponseParser.class);
         matcher = mock(PolicyMatcher.class);
         mapper = mock(PolicyMapper.class);
-        service = new PolicyService(client, parser, matcher, mapper);
+        recommendationEvaluator = mock(PolicyRecommendationEvaluator.class);
+        service = new PolicyService(
+                client,
+                parser,
+                matcher,
+                mapper,
+                recommendationEvaluator
+        );
     }
 
     @Test
@@ -72,7 +82,16 @@ class PolicyServiceTest {
         when(parser.parseItems(root)).thenReturn(List.of(item));
         when(matcher.match(item, request(20, "11680")))
                 .thenReturn(PolicyMatchResult.matched());
-        when(mapper.toSummary(eq(item), any(PolicyMatchResult.class))).thenReturn(summary);
+        when(recommendationEvaluator.evaluate(
+                eq(item),
+                any(PolicySearchRequest.class),
+                any(PolicyMatchResult.class)
+        )).thenReturn(recommended(300));
+        when(mapper.toSummary(
+                eq(item),
+                any(PolicyMatchResult.class),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(summary);
 
         var response = service.search(request(20, "11680"));
 
@@ -136,6 +155,47 @@ class PolicyServiceTest {
     }
 
     @Test
+    void 추천_우선순위가_높은_정책을_먼저_반환한다() {
+        JsonNode root = mock(JsonNode.class);
+        YouthPolicyItem discoverItem = item("POLICY-DISCOVER");
+        YouthPolicyItem recommendedItem = item("POLICY-RECOMMENDED");
+        PolicySummary discoverSummary = summary("POLICY-DISCOVER");
+        PolicySummary recommendedSummary = summary("POLICY-RECOMMENDED");
+        PolicyMatchResult matchResult = PolicyMatchResult.matched();
+
+        when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
+        when(parser.parseItems(root)).thenReturn(List.of(discoverItem, recommendedItem));
+        when(matcher.match(any(YouthPolicyItem.class), any(PolicySearchRequest.class)))
+                .thenReturn(matchResult);
+        when(recommendationEvaluator.evaluate(discoverItem, request(20, "11680"), matchResult))
+                .thenReturn(new PolicyRecommendationResult(
+                        PolicyRecommendationStatus.DISCOVER,
+                        List.of("함께 보기"),
+                        100
+                ));
+        when(recommendationEvaluator.evaluate(
+                recommendedItem,
+                request(20, "11680"),
+                matchResult
+        )).thenReturn(recommended(300));
+        when(mapper.toSummary(
+                eq(discoverItem),
+                eq(matchResult),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(discoverSummary);
+        when(mapper.toSummary(
+                eq(recommendedItem),
+                eq(matchResult),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(recommendedSummary);
+
+        var response = service.search(request(20, "11680"));
+
+        assertThat(response.items())
+                .containsExactly(recommendedSummary, discoverSummary);
+    }
+
+    @Test
     void 상세_응답을_파싱해_내부_DTO로_변환한다() {
         JsonNode root = mock(JsonNode.class);
         YouthPolicyItem item = item("POLICY-DETAIL");
@@ -169,7 +229,8 @@ class PolicyServiceTest {
                 size,
                 null,
                 null,
-                null
+                null,
+                Set.of("HOUSING")
         );
     }
 
@@ -186,7 +247,17 @@ class PolicyServiceTest {
                 "지원 대상",
                 "주관 기관",
                 PolicyEligibilityStatus.MATCHED,
-                List.of()
+                List.of(),
+                PolicyRecommendationStatus.RECOMMENDED,
+                List.of("관심 주제인 주거 분야와 관련된 정책이에요.")
+        );
+    }
+
+    private PolicyRecommendationResult recommended(int priority) {
+        return new PolicyRecommendationResult(
+                PolicyRecommendationStatus.RECOMMENDED,
+                List.of("맞춤 추천 이유"),
+                priority
         );
     }
 

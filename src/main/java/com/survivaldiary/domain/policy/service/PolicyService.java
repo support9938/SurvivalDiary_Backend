@@ -17,6 +17,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 
 @Service
 public class PolicyService {
@@ -25,37 +26,51 @@ public class PolicyService {
     private final YouthPolicyResponseParser responseParser;
     private final PolicyMatcher policyMatcher;
     private final PolicyMapper policyMapper;
+    private final PolicyRecommendationEvaluator recommendationEvaluator;
 
     public PolicyService(
             YouthPolicyClient youthPolicyClient,
             YouthPolicyResponseParser responseParser,
             PolicyMatcher policyMatcher,
-            PolicyMapper policyMapper
+            PolicyMapper policyMapper,
+            PolicyRecommendationEvaluator recommendationEvaluator
     ) {
         this.youthPolicyClient = youthPolicyClient;
         this.responseParser = responseParser;
         this.policyMatcher = policyMatcher;
         this.policyMapper = policyMapper;
+        this.recommendationEvaluator = recommendationEvaluator;
     }
 
     public PolicySearchResponse search(PolicySearchRequest request) {
         validateRegionRelation(request);
 
-        Map<String, PolicySummary> matchedItems = new LinkedHashMap<>();
+        Map<String, RankedPolicy> matchedItems = new LinkedHashMap<>();
         JsonNode root = youthPolicyClient.search(toProviderRequest(request));
         List<YouthPolicyItem> providerItems = responseParser.parseItems(root);
 
         for (YouthPolicyItem item : providerItems) {
             PolicyMatchResult matchResult = policyMatcher.match(item, request);
             if (matchResult.included()) {
+                PolicyRecommendationResult recommendationResult = recommendationEvaluator.evaluate(
+                        item,
+                        request,
+                        matchResult
+                );
                 matchedItems.putIfAbsent(
                         item.plcyNo(),
-                        policyMapper.toSummary(item, matchResult)
+                        new RankedPolicy(
+                                policyMapper.toSummary(item, matchResult, recommendationResult),
+                                recommendationResult.priority()
+                        )
                 );
             }
         }
 
-        List<PolicySummary> items = List.copyOf(matchedItems.values());
+        List<PolicySummary> items = matchedItems.values().stream()
+                .sorted(Comparator.comparingInt(RankedPolicy::priority).reversed())
+                .map(RankedPolicy::summary)
+                .toList();
         boolean providerMayHaveMore = providerItems.size() >= request.requestedSize();
         Integer nextPage = providerMayHaveMore ? request.requestedPage() + 1 : null;
         return new PolicySearchResponse(items, providerMayHaveMore, 1, nextPage);
@@ -102,5 +117,8 @@ public class PolicyService {
                 && !request.districtCode().startsWith(request.regionCode())) {
             throw new BusinessException(ErrorCode.INVALID_POLICY_FILTER);
         }
+    }
+
+    private record RankedPolicy(PolicySummary summary, int priority) {
     }
 }
