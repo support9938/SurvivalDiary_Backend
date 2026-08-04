@@ -55,7 +55,12 @@ public enum ErrorCode {
             "L002",
             "지도 정보 제공처 응답을 처리할 수 없습니다."
     ),
-    INVALID_MAP_FILTER(HttpStatus.BAD_REQUEST, "L003", "지도 검색 조건이 올바르지 않습니다.");
+    INVALID_MAP_FILTER(HttpStatus.BAD_REQUEST, "L003", "지도 검색 조건이 올바르지 않습니다."),
+    MAP_ROUTE_NOT_FOUND(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "L004",
+            "출발지에서 목적지까지 이동 가능한 도보 경로를 찾을 수 없습니다."
+    );
 
     private final HttpStatus status;
     private final String code;
