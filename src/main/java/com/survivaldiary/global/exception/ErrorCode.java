@@ -28,6 +28,7 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "U003", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "U004", "만료된 토큰입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U005", "사용자를 찾을 수 없습니다."),
+    SOCIAL_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "U006", "SNS 인증 정보를 확인할 수 없습니다."),
 
     // 정책
     POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "Y001", "정책을 찾을 수 없습니다."),
@@ -41,7 +42,25 @@ public enum ErrorCode {
             "Y003",
             "정책 제공처 응답을 처리할 수 없습니다."
     ),
-    INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다.");
+    INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다."),
+
+    // 장소 / 지도
+    MAP_PROVIDER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "L001",
+            "지도 정보를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
+    ),
+    MAP_PROVIDER_BAD_RESPONSE(
+            HttpStatus.BAD_GATEWAY,
+            "L002",
+            "지도 정보 제공처 응답을 처리할 수 없습니다."
+    ),
+    INVALID_MAP_FILTER(HttpStatus.BAD_REQUEST, "L003", "지도 검색 조건이 올바르지 않습니다."),
+    MAP_ROUTE_NOT_FOUND(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "L004",
+            "출발지에서 목적지까지 이동 가능한 도보 경로를 찾을 수 없습니다."
+    );
 
     private final HttpStatus status;
     private final String code;

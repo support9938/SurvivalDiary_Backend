@@ -27,11 +27,11 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String email;
 
     /** BCrypt 해시만 저장 — 평문 저장·로깅 금지 */
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false, length = 50)

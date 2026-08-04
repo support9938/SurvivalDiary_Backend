@@ -1,5 +1,6 @@
 package com.survivaldiary.domain.expense.controller;
 
+import com.survivaldiary.domain.expense.dto.CreateAutoExpenseRequest;
 import com.survivaldiary.domain.expense.dto.CreateExpenseRequest;
 import com.survivaldiary.domain.expense.dto.ExpenseResponse;
 import com.survivaldiary.domain.expense.service.ExpenseService;
@@ -64,6 +65,22 @@ public class ExpenseController {
             @AuthenticationPrincipal Long authenticatedUserId,
             @Valid @RequestBody CreateExpenseRequest request) {
         ExpenseResponse response = expenseService.createManualExpense(
+                authenticatedUserId,
+                request
+        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(response));
+    }
+
+    @Operation(
+            summary = "알림 감지 지출 저장",
+            description = "사용자가 확인한 결제 알림을 AUTO 지출로 저장한다. 같은 감지 키는 한 번만 저장된다."
+    )
+    @PostMapping("/auto")
+    public ResponseEntity<ApiResponse<ExpenseResponse>> createAuto(
+            @AuthenticationPrincipal Long authenticatedUserId,
+            @Valid @RequestBody CreateAutoExpenseRequest request) {
+        ExpenseResponse response = expenseService.createAutoExpense(
                 authenticatedUserId,
                 request
         );
