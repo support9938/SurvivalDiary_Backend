@@ -105,11 +105,14 @@ public class PolicyService {
                     case CULTURE -> "복지문화";
                     case ASSET, TRANSPORT -> null;
                 };
+        String providerRegionCode = request.districtCode() == null
+                ? request.regionCode() + "000"
+                : request.districtCode();
 
         return new YouthPolicySearchRequest(
                 pageNumber,
                 PROVIDER_PAGE_SIZE,
-                request.districtCode(),
+                providerRegionCode,
                 largeCategory,
                 null,
                 null,

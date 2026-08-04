@@ -80,14 +80,7 @@ public class PolicyMatcher {
         if (codes.contains(districtCode)) {
             return true;
         }
-
-        boolean sameRegionCandidate = codes.stream()
-                .anyMatch(code -> code.startsWith(request.regionCode()));
-        if (sameRegionCandidate) {
-            checkReasons.add("선택한 시·군·구의 정확한 거주지역 조건을 확인해야 합니다.");
-            return true;
-        }
-        return false;
+        return codes.contains(request.regionCode() + "000");
     }
 
     private boolean matchesEmployment(

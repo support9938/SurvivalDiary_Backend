@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -111,6 +112,32 @@ class PolicyServiceTest {
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_POLICY_FILTER);
         verify(client, never()).search(any(YouthPolicySearchRequest.class));
+    }
+
+    @Test
+    void 시군구가_없으면_시도_전체_코드로_제공처를_조회한다() {
+        JsonNode root = mock(JsonNode.class);
+        when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
+        when(parser.parseItems(root)).thenReturn(List.of());
+
+        service.search(request(20, null));
+
+        verify(client).search(argThat(providerRequest ->
+                "11000".equals(providerRequest.zipCode())
+        ));
+    }
+
+    @Test
+    void 시군구가_있으면_선택한_코드로_제공처를_조회한다() {
+        JsonNode root = mock(JsonNode.class);
+        when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
+        when(parser.parseItems(root)).thenReturn(List.of());
+
+        service.search(request(20, "11680"));
+
+        verify(client).search(argThat(providerRequest ->
+                "11680".equals(providerRequest.zipCode())
+        ));
     }
 
     @Test

@@ -46,16 +46,24 @@ class PolicyMatcherTest {
     }
 
     @Test
-    void 같은_시도지만_다른_시군구만_확인되면_CHECK_REQUIRED로_포함한다() {
+    void 같은_시도라도_다른_시군구_전용_정책은_제외한다() {
         PolicyMatchResult result = matcher.match(
                 item("19", "34", "Y", "11710", "0013003", "0043001", "주거"),
                 request("NO_LIMIT")
         );
 
+        assertThat(result.included()).isFalse();
+    }
+
+    @Test
+    void 시도_공통_코드는_선택한_시군구에도_포함한다() {
+        PolicyMatchResult result = matcher.match(
+                item("19", "34", "Y", "11000", "0013003", "0043001", "주거"),
+                request("NO_LIMIT")
+        );
+
         assertThat(result.included()).isTrue();
-        assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.CHECK_REQUIRED);
-        assertThat(result.reasons())
-                .contains("선택한 시·군·구의 정확한 거주지역 조건을 확인해야 합니다.");
+        assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.MATCHED);
     }
 
     private PolicySearchRequest request(String incomeRange) {
