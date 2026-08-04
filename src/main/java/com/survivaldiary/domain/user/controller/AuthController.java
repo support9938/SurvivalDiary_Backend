@@ -5,6 +5,7 @@ import com.survivaldiary.domain.user.dto.RefreshTokenRequest;
 import com.survivaldiary.domain.user.dto.SignupRequest;
 import com.survivaldiary.domain.user.dto.SocialLoginRequest;
 import com.survivaldiary.domain.user.dto.TokenResponse;
+import com.survivaldiary.domain.user.dto.WebSocialLoginRequest;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.service.AuthService;
 import com.survivaldiary.global.common.ApiResponse;
@@ -60,6 +61,20 @@ public class AuthController {
             @Valid @RequestBody SocialLoginRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
                 authService.socialLogin(SocialAccount.Provider.NAVER, request)));
+    }
+
+    @PostMapping("/web/social/kakao")
+    public ResponseEntity<ApiResponse<TokenResponse>> webLoginWithKakao(
+            @Valid @RequestBody WebSocialLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                authService.webSocialLogin(SocialAccount.Provider.KAKAO, request)));
+    }
+
+    @PostMapping("/web/social/naver")
+    public ResponseEntity<ApiResponse<TokenResponse>> webLoginWithNaver(
+            @Valid @RequestBody WebSocialLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                authService.webSocialLogin(SocialAccount.Provider.NAVER, request)));
     }
 
     @Operation(summary = "Refresh access token")

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.survivaldiary.domain.user.dto.SocialLoginRequest;
+import com.survivaldiary.domain.user.dto.WebSocialLoginRequest;
 import com.survivaldiary.domain.user.entity.RefreshToken;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.entity.User;
@@ -16,6 +17,7 @@ import com.survivaldiary.domain.user.repository.SocialAccountRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.domain.user.social.SocialProfile;
 import com.survivaldiary.domain.user.social.SocialProfileVerifier;
+import com.survivaldiary.domain.user.social.SocialOAuthTokenClient;
 import com.survivaldiary.global.security.JwtTokenProvider;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,7 @@ class AuthServiceSocialLoginTest {
     private final JwtTokenProvider jwtTokenProvider = mock(JwtTokenProvider.class);
     private final RefreshTokenHasher refreshTokenHasher = mock(RefreshTokenHasher.class);
     private final SocialProfileVerifier socialProfileVerifier = mock(SocialProfileVerifier.class);
+    private final SocialOAuthTokenClient socialOAuthTokenClient = mock(SocialOAuthTokenClient.class);
 
     private AuthService authService;
 
@@ -46,13 +49,36 @@ class AuthServiceSocialLoginTest {
                 passwordEncoder,
                 jwtTokenProvider,
                 refreshTokenHasher,
-                socialProfileVerifier
+                socialProfileVerifier,
+                socialOAuthTokenClient
         );
         when(jwtTokenProvider.createAccessToken(any(), any())).thenReturn("access-token");
         when(jwtTokenProvider.createRefreshToken(any())).thenReturn("refresh-token");
         when(jwtTokenProvider.getAccessTokenValidityMs()).thenReturn(1_800_000L);
         when(jwtTokenProvider.getRefreshTokenValidityMs()).thenReturn(1_209_600_000L);
         when(refreshTokenHasher.hash("refresh-token")).thenReturn("token-hash");
+    }
+
+    @Test
+    void exchangesAWebAuthorizationCodeBeforeSocialLogin() {
+        var request = new WebSocialLoginRequest(
+                "authorization-code", "http://localhost:5173/auth/callback/kakao", "state");
+        when(socialOAuthTokenClient.exchange(SocialAccount.Provider.KAKAO, request))
+                .thenReturn("provider-token");
+        when(socialProfileVerifier.verify(SocialAccount.Provider.KAKAO, "provider-token"))
+                .thenReturn(new SocialProfile("kakao-id", null, "카카오 사용자"));
+        when(socialAccountRepository.findByProviderAndProviderUserId(
+                SocialAccount.Provider.KAKAO, "kakao-id"))
+                .thenReturn(Optional.empty());
+        User savedUser = mock(User.class);
+        when(savedUser.getId()).thenReturn(21L);
+        when(savedUser.getRole()).thenReturn(User.Role.USER);
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        var response = authService.webSocialLogin(SocialAccount.Provider.KAKAO, request);
+
+        assertThat(response.accessToken()).isEqualTo("access-token");
+        verify(socialOAuthTokenClient).exchange(SocialAccount.Provider.KAKAO, request);
     }
 
     @Test
