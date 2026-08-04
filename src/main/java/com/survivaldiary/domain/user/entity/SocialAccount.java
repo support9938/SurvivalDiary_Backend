@@ -2,46 +2,55 @@ package com.survivaldiary.domain.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** 발급한 리프레시 토큰의 서버측 기록 — 강제 로그아웃·토큰 무효화에 사용한다. */
 @Entity
-@Table(name = "refresh_tokens")
+@Table(
+        name = "social_accounts",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_social_accounts_provider_user",
+                columnNames = {"provider", "provider_user_id"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RefreshToken {
+public class SocialAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "token_id")
+    @Column(name = "social_account_id")
     private Long id;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
-    private String tokenHash;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Provider provider;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    @Column(name = "provider_user_id", nullable = false, length = 255)
+    private String providerUserId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    private RefreshToken(Long userId, String tokenHash, LocalDateTime expiresAt) {
+    private SocialAccount(Long userId, Provider provider, String providerUserId) {
         this.userId = userId;
-        this.tokenHash = tokenHash;
-        this.expiresAt = expiresAt;
+        this.provider = provider;
+        this.providerUserId = providerUserId;
     }
 
     @PrePersist
@@ -50,4 +59,6 @@ public class RefreshToken {
             createdAt = LocalDateTime.now();
         }
     }
+
+    public enum Provider { KAKAO, NAVER }
 }

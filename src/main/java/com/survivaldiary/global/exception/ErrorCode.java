@@ -28,6 +28,7 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "U003", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "U004", "만료된 토큰입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U005", "사용자를 찾을 수 없습니다."),
+    SOCIAL_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "U006", "SNS 인증 정보를 확인할 수 없습니다."),
 
     // 정책
     POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "Y001", "정책을 찾을 수 없습니다."),

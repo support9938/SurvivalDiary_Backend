@@ -1,8 +1,11 @@
 package com.survivaldiary.domain.user.controller;
 
 import com.survivaldiary.domain.user.dto.LoginRequest;
+import com.survivaldiary.domain.user.dto.RefreshTokenRequest;
 import com.survivaldiary.domain.user.dto.SignupRequest;
+import com.survivaldiary.domain.user.dto.SocialLoginRequest;
 import com.survivaldiary.domain.user.dto.TokenResponse;
+import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.service.AuthService;
 import com.survivaldiary.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,5 +42,46 @@ public class AuthController {
     public ResponseEntity<ApiResponse<TokenResponse>> login(
             @Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(authService.login(request)));
+    }
+
+    @Operation(summary = "카카오 앱 로그인",
+            description = "카카오 액세스 토큰을 공식 사용자 API로 검증한 뒤 서비스 토큰을 발급한다.")
+    @PostMapping("/social/kakao")
+    public ResponseEntity<ApiResponse<TokenResponse>> loginWithKakao(
+            @Valid @RequestBody SocialLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                authService.socialLogin(SocialAccount.Provider.KAKAO, request)));
+    }
+
+    @Operation(summary = "네이버 앱 로그인",
+            description = "네이버 액세스 토큰을 공식 사용자 API로 검증한 뒤 서비스 토큰을 발급한다.")
+    @PostMapping("/social/naver")
+    public ResponseEntity<ApiResponse<TokenResponse>> loginWithNaver(
+            @Valid @RequestBody SocialLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                authService.socialLogin(SocialAccount.Provider.NAVER, request)));
+    }
+
+    @Operation(summary = "Refresh access token")
+    @PostMapping("/token/refresh")
+    public ResponseEntity<ApiResponse<TokenResponse>> refresh(
+            @Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.refresh(request)));
+    }
+
+    @Operation(summary = "Log out the current device session")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @Operation(summary = "Log out all sessions for the signed-in user")
+    @PostMapping("/logout-all")
+    public ResponseEntity<ApiResponse<Void>> logoutAll(
+            @AuthenticationPrincipal Long userId) {
+        authService.logoutAll(userId);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }
