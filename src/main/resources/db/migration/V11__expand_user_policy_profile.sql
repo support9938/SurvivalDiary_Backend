@@ -2,12 +2,15 @@
 ALTER TABLE user_policy_preferences
   MODIFY COLUMN employment_status VARCHAR(30) NULL
     COMMENT '이전 앱 호환용 취업 상태',
-  ADD COLUMN work_status VARCHAR(30) NULL AFTER district_code
-    COMMENT 'EMPLOYED / SELF_EMPLOYED / UNEMPLOYED / FREELANCER / DAILY_WORKER / PROSPECTIVE_FOUNDER / SHORT_TERM_WORKER / FARMER / OTHER',
-  ADD COLUMN job_seeking TINYINT(1) NULL AFTER work_status
-    COMMENT '현재 구직 여부. 모르면 NULL',
-  ADD COLUMN education_status VARCHAR(30) NULL AFTER job_seeking
-    COMMENT 'STUDENT / ON_LEAVE / GRADUATED / NOT_STUDENT / OTHER';
+  ADD COLUMN work_status VARCHAR(30) NULL
+    COMMENT 'EMPLOYED / SELF_EMPLOYED / UNEMPLOYED / FREELANCER / DAILY_WORKER / PROSPECTIVE_FOUNDER / SHORT_TERM_WORKER / FARMER / OTHER'
+    AFTER district_code,
+  ADD COLUMN job_seeking TINYINT(1) NULL
+    COMMENT '현재 구직 여부. 모르면 NULL'
+    AFTER work_status,
+  ADD COLUMN education_status VARCHAR(30) NULL
+    COMMENT 'STUDENT / ON_LEAVE / GRADUATED / NOT_STUDENT / OTHER'
+    AFTER job_seeking;
 
 UPDATE user_policy_preferences
 SET work_status = CASE employment_status
