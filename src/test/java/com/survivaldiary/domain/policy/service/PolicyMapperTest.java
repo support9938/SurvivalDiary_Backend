@@ -2,6 +2,7 @@ package com.survivaldiary.domain.policy.service;
 
 import com.survivaldiary.domain.policy.client.dto.YouthPolicyItem;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
+import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,7 +17,12 @@ class PolicyMapperTest {
     void 목록에는_지원금_null과_조건_확인_상태를_안전하게_반환한다() {
         var summary = mapper.toSummary(
                 item("not-a-url"),
-                PolicyMatchResult.checkRequired(List.of("소득 조건 확인 필요"))
+                PolicyMatchResult.checkRequired(List.of("소득 조건 확인 필요")),
+                new PolicyRecommendationResult(
+                        PolicyRecommendationStatus.CHECK_REQUIRED,
+                        List.of("소득 조건 확인 필요"),
+                        200
+                )
         );
 
         assertThat(summary.policyId()).isEqualTo("POLICY-1");
@@ -24,6 +30,8 @@ class PolicyMapperTest {
         assertThat(summary.eligibilityStatus())
                 .isEqualTo(PolicyEligibilityStatus.CHECK_REQUIRED);
         assertThat(summary.eligibilityReasons()).containsExactly("소득 조건 확인 필요");
+        assertThat(summary.recommendationStatus())
+                .isEqualTo(PolicyRecommendationStatus.CHECK_REQUIRED);
     }
 
     @Test

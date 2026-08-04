@@ -53,6 +53,7 @@ class PolicyControllerTest {
                                   "incomeRange": "BELOW_100",
                                   "category": "HOUSING",
                                   "keyword": "월세",
+                                  "interests": ["HOUSING", "ASSET_BUILDING"],
                                   "page": 1,
                                   "size": 20
                                 }
@@ -74,6 +75,22 @@ class PolicyControllerTest {
                                 {
                                   "regionCode": "11",
                                   "employmentStatus": "JOB_SEEKING"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("C001"));
+    }
+
+    @Test
+    void 알_수_없는_관심_주제는_검색_전에_거절한다() throws Exception {
+        mockMvc.perform(post("/api/policies/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "age": 27,
+                                  "regionCode": "11",
+                                  "interests": ["UNKNOWN_INTEREST"]
                                 }
                                 """))
                 .andExpect(status().isBadRequest())

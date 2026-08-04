@@ -17,7 +17,8 @@ public class PolicyMapper {
 
     public PolicySummary toSummary(
             YouthPolicyItem item,
-            PolicyMatchResult matchResult
+            PolicyMatchResult matchResult,
+            PolicyRecommendationResult recommendationResult
     ) {
         return new PolicySummary(
                 item.plcyNo(),
@@ -31,7 +32,9 @@ public class PolicyMapper {
                 targetText(item),
                 fallback(item.sprvsnInstCdNm(), "기관 정보 확인 필요"),
                 matchResult.status(),
-                matchResult.reasons()
+                matchResult.reasons(),
+                recommendationResult.status(),
+                recommendationResult.reasons()
         );
     }
 
