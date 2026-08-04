@@ -26,13 +26,14 @@ public class PolicyMatcher {
         if (!matchesRegion(item.zipCd(), request, checkReasons)) {
             return PolicyMatchResult.excluded();
         }
-        if (!matchesEmployment(item, request.employmentStatus(), checkReasons)) {
+        if (!matchesEmployment(item, request.requestedWorkStatus(), checkReasons)) {
             return PolicyMatchResult.excluded();
         }
+        addEducationCheck(item, request.requestedEducationStatus(), checkReasons);
         if (!matchesIncome(item, request.incomeRange(), checkReasons)) {
             return PolicyMatchResult.excluded();
         }
-        if (!matchesCategory(item, request.requestedCategory())) {
+        if (!matchesCategory(item, request)) {
             return PolicyMatchResult.excluded();
         }
 
@@ -85,34 +86,46 @@ public class PolicyMatcher {
 
     private boolean matchesEmployment(
             YouthPolicyItem item,
-            String employmentStatus,
+            String workStatus,
             List<String> checkReasons
     ) {
+        if (workStatus == null) {
+            return true;
+        }
+
         Set<String> jobCodes = tokens(item.jobCd());
         if (jobCodes.contains(JOB_UNLIMITED)) {
             return true;
         }
 
-        if ("STUDENT".equals(employmentStatus)) {
-            if (!isBlank(item.schoolCd())) {
-                checkReasons.add("재학·학력 조건을 공고문에서 확인해야 합니다.");
-                return true;
-            }
-            checkReasons.add("학생 지원 가능 여부를 공고문에서 확인해야 합니다.");
-            return true;
-        }
-
-        String expectedCode = switch (employmentStatus) {
+        String expectedCode = switch (workStatus) {
             case "EMPLOYED" -> "0013001";
-            case "JOB_SEEKING", "UNEMPLOYED" -> "0013003";
+            case "SELF_EMPLOYED" -> "0013002";
+            case "UNEMPLOYED" -> "0013003";
+            case "FREELANCER" -> "0013004";
+            case "DAILY_WORKER" -> "0013005";
+            case "PROSPECTIVE_FOUNDER" -> "0013006";
+            case "SHORT_TERM_WORKER" -> "0013007";
+            case "FARMER" -> "0013008";
+            case "OTHER" -> "0013009";
             default -> null;
         };
 
         if (expectedCode == null || jobCodes.isEmpty()) {
-            checkReasons.add("취업 상태 조건을 공고문에서 확인해야 합니다.");
+            checkReasons.add("근로 상태 조건을 공고문에서 확인해야 합니다.");
             return true;
         }
         return jobCodes.contains(expectedCode);
+    }
+
+    private void addEducationCheck(
+            YouthPolicyItem item,
+            String educationStatus,
+            List<String> checkReasons
+    ) {
+        if (educationStatus != null && !isBlank(item.schoolCd())) {
+            checkReasons.add("재학·학력 조건을 공고문에서 확인해야 합니다.");
+        }
     }
 
     private boolean matchesIncome(
@@ -131,31 +144,40 @@ public class PolicyMatcher {
         return true;
     }
 
-    private boolean matchesCategory(YouthPolicyItem item, PolicyCategory category) {
+    private boolean matchesCategory(YouthPolicyItem item, PolicySearchRequest request) {
+        String requestedCode = request.category();
+        if ("ASSET".equals(requestedCode)) {
+            return searchableText(item).contains("자산")
+                    || searchableText(item).contains("금융");
+        }
+        if ("TRANSPORT".equals(requestedCode)) {
+            return searchableText(item).contains("교통")
+                    || searchableText(item).contains("대중교통");
+        }
+
+        PolicyCategory category = request.requestedCategory();
         if (category == null) {
             return true;
         }
 
         String large = normalize(item.lclsfNm());
-        String middle = normalize(item.mclsfNm());
-        String searchableText = String.join(
+        return switch (category) {
+            case EMPLOYMENT -> "일자리".equals(large);
+            case HOUSING -> "주거".equals(large);
+            case EDUCATION -> "교육".equals(large);
+            case WELFARE_CULTURE -> "복지문화".equals(large);
+            case PARTICIPATION_RIGHTS -> "참여권리".equals(large);
+        };
+    }
+
+    private String searchableText(YouthPolicyItem item) {
+        return String.join(
                 " ",
                 nullToEmpty(item.plcyNm()),
                 nullToEmpty(item.plcyKywdNm()),
                 nullToEmpty(item.plcyExplnCn()),
-                nullToEmpty(middle)
+                nullToEmpty(item.mclsfNm())
         ).toLowerCase(Locale.ROOT);
-
-        return switch (category) {
-            case HOUSING -> "주거".equals(large);
-            case EMPLOYMENT -> "일자리".equals(large);
-            case CULTURE -> searchableText.contains("문화")
-                    || searchableText.contains("예술");
-            case ASSET -> searchableText.contains("자산")
-                    || searchableText.contains("금융");
-            case TRANSPORT -> searchableText.contains("교통")
-                    || searchableText.contains("대중교통");
-        };
     }
 
     private Set<String> tokens(String value) {

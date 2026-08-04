@@ -10,7 +10,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Stream;
 
 @Component
@@ -65,27 +64,20 @@ public class PolicyMapper {
 
     private PolicyCategory categoryType(YouthPolicyItem item) {
         String large = normalize(item.lclsfNm());
-        String text = String.join(
-                " ",
-                nullToEmpty(item.plcyNm()),
-                nullToEmpty(item.plcyKywdNm()),
-                nullToEmpty(item.mclsfNm())
-        ).toLowerCase(Locale.ROOT);
-
-        if ("주거".equals(large)) {
-            return PolicyCategory.HOUSING;
-        }
         if ("일자리".equals(large)) {
             return PolicyCategory.EMPLOYMENT;
         }
-        if (text.contains("문화") || text.contains("예술")) {
-            return PolicyCategory.CULTURE;
+        if ("주거".equals(large)) {
+            return PolicyCategory.HOUSING;
         }
-        if (text.contains("자산") || text.contains("금융")) {
-            return PolicyCategory.ASSET;
+        if ("교육".equals(large)) {
+            return PolicyCategory.EDUCATION;
         }
-        if (text.contains("교통") || text.contains("대중교통")) {
-            return PolicyCategory.TRANSPORT;
+        if ("복지문화".equals(large)) {
+            return PolicyCategory.WELFARE_CULTURE;
+        }
+        if ("참여권리".equals(large)) {
+            return PolicyCategory.PARTICIPATION_RIGHTS;
         }
         return null;
     }
@@ -148,10 +140,6 @@ public class PolicyMapper {
 
     private String normalize(String value) {
         return value == null ? null : value.trim();
-    }
-
-    private String nullToEmpty(String value) {
-        return value == null ? "" : value;
     }
 
     private boolean isBlank(String value) {

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,7 +24,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,11 +45,10 @@ class PolicyServiceTest {
     }
 
     @Test
-    void 결과가_부족하면_제공처를_최대_3페이지까지만_확인한다() {
+    void 외부_페이지가_가득_차면_다음_페이지를_반환한다() {
         JsonNode root = mock(JsonNode.class);
-        List<YouthPolicyItem> fullPage = IntStream.range(0, 20)
-                .mapToObj(index -> item("POLICY-" + index))
-                .toList();
+        List<YouthPolicyItem> fullPage = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(index -> item("POLICY-" + index)).toList();
         when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
         when(parser.parseItems(root)).thenReturn(fullPage);
         when(matcher.match(any(YouthPolicyItem.class), any(PolicySearchRequest.class)))
@@ -60,9 +57,10 @@ class PolicyServiceTest {
         var response = service.search(request(20, "11680"));
 
         assertThat(response.items()).isEmpty();
-        assertThat(response.checkedProviderPages()).isEqualTo(3);
+        assertThat(response.checkedProviderPages()).isEqualTo(1);
         assertThat(response.partialResult()).isTrue();
-        verify(client, times(3)).search(any(YouthPolicySearchRequest.class));
+        assertThat(response.nextPage()).isEqualTo(2);
+        verify(client).search(any(YouthPolicySearchRequest.class));
     }
 
     @Test
@@ -81,26 +79,23 @@ class PolicyServiceTest {
         assertThat(response.items()).containsExactly(summary);
         assertThat(response.checkedProviderPages()).isEqualTo(1);
         assertThat(response.partialResult()).isFalse();
-        verify(client, times(1)).search(any(YouthPolicySearchRequest.class));
+        assertThat(response.nextPage()).isNull();
+        verify(client).search(any(YouthPolicySearchRequest.class));
     }
 
     @Test
-    void 요청한_개수보다_일치_결과가_많으면_부분_결과로_표시한다() {
+    void 요청한_페이지와_정책명_검색어를_제공처에_전달한다() {
         JsonNode root = mock(JsonNode.class);
-        List<YouthPolicyItem> providerItems = List.of(item("POLICY-1"), item("POLICY-2"));
         when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
-        when(parser.parseItems(root)).thenReturn(providerItems);
-        when(matcher.match(any(YouthPolicyItem.class), any(PolicySearchRequest.class)))
-                .thenReturn(PolicyMatchResult.matched());
-        when(mapper.toSummary(any(YouthPolicyItem.class), any(PolicyMatchResult.class)))
-                .thenAnswer(invocation -> summary(
-                        invocation.<YouthPolicyItem>getArgument(0).plcyNo()
-                ));
+        when(parser.parseItems(root)).thenReturn(List.of());
 
-        var response = service.search(request(1, "11680"));
+        service.search(request(20, "11680", "  월세  ", 4));
 
-        assertThat(response.items()).hasSize(1);
-        assertThat(response.partialResult()).isTrue();
+        verify(client).search(argThat(providerRequest ->
+                providerRequest.pageNumber() == 4
+                        && providerRequest.pageSize() == 20
+                        && "월세".equals(providerRequest.policyName())
+        ));
     }
 
     @Test
@@ -153,6 +148,15 @@ class PolicyServiceTest {
     }
 
     private PolicySearchRequest request(int size, String districtCode) {
+        return request(size, districtCode, null, 1);
+    }
+
+    private PolicySearchRequest request(
+            int size,
+            String districtCode,
+            String keyword,
+            int page
+    ) {
         return new PolicySearchRequest(
                 27,
                 "11",
@@ -160,7 +164,12 @@ class PolicyServiceTest {
                 "JOB_SEEKING",
                 "NO_LIMIT",
                 "HOUSING",
-                size
+                keyword,
+                page,
+                size,
+                null,
+                null,
+                null
         );
     }
 

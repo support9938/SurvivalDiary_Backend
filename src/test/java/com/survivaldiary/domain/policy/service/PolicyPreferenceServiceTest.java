@@ -9,6 +9,7 @@ import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +71,11 @@ class PolicyPreferenceServiceTest {
                 "11680",
                 "JOB_SEEKING",
                 "BELOW_100",
-                "HOUSING"
+                "HOUSING",
+                "UNEMPLOYED",
+                true,
+                null,
+                Set.of("HOUSING")
         );
         when(userRepository.findById(7L)).thenReturn(Optional.of(user()));
         when(preferenceRepository.findById(7L)).thenReturn(Optional.of(existing));
@@ -80,8 +85,11 @@ class PolicyPreferenceServiceTest {
 
         assertThat(existing.getRegionCode()).isEqualTo("26");
         assertThat(existing.getDistrictCode()).isNull();
-        assertThat(existing.getIncomeRange()).isNull();
+        assertThat(existing.getIncomeRange()).isEqualTo("BELOW_100");
         assertThat(existing.getCategory()).isNull();
+        assertThat(existing.getWorkStatus()).isEqualTo("UNEMPLOYED");
+        assertThat(existing.getJobSeeking()).isTrue();
+        assertThat(existing.getInterests()).containsExactly("ASSET_BUILDING");
         assertThat(response.regionCode()).isEqualTo("26");
     }
 
@@ -126,7 +134,11 @@ class PolicyPreferenceServiceTest {
                 districtCode,
                 "JOB_SEEKING",
                 null,
-                null
+                null,
+                "UNEMPLOYED",
+                true,
+                null,
+                Set.of("ASSET_BUILDING")
         );
     }
 }

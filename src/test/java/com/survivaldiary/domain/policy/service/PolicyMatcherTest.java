@@ -66,6 +66,41 @@ class PolicyMatcherTest {
         assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.MATCHED);
     }
 
+    @Test
+    void 새_근로_상태는_온통청년_취업_요건_코드와_비교한다() {
+        PolicyMatchResult result = matcher.match(
+                item("19", "34", "Y", "11680", "0013002", "0043001", "주거"),
+                expandedRequest("SELF_EMPLOYED", null, "HOUSING")
+        );
+
+        assertThat(result.included()).isTrue();
+        assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.MATCHED);
+    }
+
+    @Test
+    void 공식_교육_분야를_대분류로_직접_판정한다() {
+        PolicyMatchResult result = matcher.match(
+                item("19", "34", "Y", "11680", "0013010", "0043001", "교육"),
+                expandedRequest(null, null, "EDUCATION")
+        );
+
+        assertThat(result.included()).isTrue();
+    }
+
+    @Test
+    void 교육_상태를_선택하고_학력_요건이_있으면_확인_필요로_포함한다() {
+        PolicyMatchResult result = matcher.match(
+                item(
+                        "19", "34", "Y", "11680", "0013010", "0043001", "교육", "0049001"
+                ),
+                expandedRequest(null, "STUDENT", "EDUCATION")
+        );
+
+        assertThat(result.included()).isTrue();
+        assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.CHECK_REQUIRED);
+        assertThat(result.reasons()).contains("재학·학력 조건을 공고문에서 확인해야 합니다.");
+    }
+
     private PolicySearchRequest request(String incomeRange) {
         return new PolicySearchRequest(
                 27,
@@ -74,7 +109,33 @@ class PolicyMatcherTest {
                 "JOB_SEEKING",
                 incomeRange,
                 "HOUSING",
-                20
+                null,
+                1,
+                20,
+                null,
+                null,
+                null
+        );
+    }
+
+    private PolicySearchRequest expandedRequest(
+            String workStatus,
+            String educationStatus,
+            String category
+    ) {
+        return new PolicySearchRequest(
+                27,
+                "11",
+                "11680",
+                null,
+                null,
+                category,
+                null,
+                1,
+                20,
+                workStatus,
+                null,
+                educationStatus
         );
     }
 
@@ -86,6 +147,28 @@ class PolicyMatcherTest {
             String jobCode,
             String incomeCode,
             String largeCategory
+    ) {
+        return item(
+                minAge,
+                maxAge,
+                ageLimit,
+                zipCode,
+                jobCode,
+                incomeCode,
+                largeCategory,
+                null
+        );
+    }
+
+    private YouthPolicyItem item(
+            String minAge,
+            String maxAge,
+            String ageLimit,
+            String zipCode,
+            String jobCode,
+            String incomeCode,
+            String largeCategory,
+            String schoolCode
     ) {
         return new YouthPolicyItem(
                 "POLICY-1",
@@ -100,7 +183,7 @@ class PolicyMatcherTest {
                 maxAge,
                 ageLimit,
                 jobCode,
-                null,
+                schoolCode,
                 incomeCode,
                 null,
                 null,

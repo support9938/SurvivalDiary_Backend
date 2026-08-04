@@ -30,8 +30,8 @@ public class PolicyController {
 
     @Operation(
             summary = "맞춤 정책 실시간 검색",
-            description = "로그인 사용자의 조건으로 온통청년 정책을 최대 3페이지 조회하고, "
-                    + "확정할 수 없는 조건은 CHECK_REQUIRED로 반환한다."
+            description = "로그인 사용자의 조건과 선택적인 정책명 검색어로 온통청년 정책 한 페이지를 "
+                    + "조회하고, 다음 페이지 번호와 함께 반환한다."
     )
     @PostMapping("/search")
     public ResponseEntity<ApiResponse<PolicySearchResponse>> search(

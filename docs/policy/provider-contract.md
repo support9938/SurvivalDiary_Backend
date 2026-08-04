@@ -12,6 +12,7 @@
 - 공식 제공목록: https://www.youthcenter.go.kr/cmnFooter/openapiIntro/oaiDoc
 - 공식 이용약관: https://www.youthcenter.go.kr/cmnFooter/termsInfo
 - 공식 코드정의서: https://www.youthcenter.go.kr/downloadform/API코드정보.xlsx
+- 최근 갱신일: 2026-08-04
 
 ## 2. 확인 결과 요약
 
@@ -445,7 +446,7 @@ MVP 클라이언트는 제공처 래퍼 변화에 대응할 수 있도록 JSON �
 앱
   → POST /api/policies/search
   → 생존일기 백엔드
-  → GET 온통청년 정책 API(최대 3페이지)
+  → GET 온통청년 정책 API(요청한 한 페이지)
   → 조건 판정 및 내부 DTO 변환
   → ApiResponse<PolicySearchResponse>
 ```
@@ -466,6 +467,8 @@ Content-Type: application/json
   "employmentStatus": "JOB_SEEKING",
   "incomeRange": "BELOW_100",
   "category": "HOUSING",
+  "keyword": "월세",
+  "page": 1,
   "size": 20
 }
 ```
@@ -478,6 +481,8 @@ Content-Type: application/json
 | `employmentStatus` | Y | `EMPLOYED`, `JOB_SEEKING`, `UNEMPLOYED`, `STUDENT` |
 | `incomeRange` | N | `BELOW_50`, `BELOW_100`, `BELOW_150`, `NO_LIMIT` |
 | `category` | N | `HOUSING`, `EMPLOYMENT`, `ASSET`, `CULTURE`, `TRANSPORT` |
+| `keyword` | N | 정책명 검색어, 공백 제외 최대 50자 |
+| `page` | N | 기본 1, 1~1000 |
 | `size` | N | 기본 20, 최대 20 |
 
 ```json
@@ -503,13 +508,16 @@ Content-Type: application/json
       }
     ],
     "partialResult": true,
-    "checkedProviderPages": 3
+    "checkedProviderPages": 1,
+    "nextPage": 2
   }
 }
 ```
 
-`partialResult=true`는 요청한 개수보다 일치 결과가 많거나, 최대 3페이지를 확인한 뒤에도
-온통청년에 다음 후보 페이지가 있을 가능성을 뜻한다.
+한 번의 내부 검색 요청은 같은 번호의 온통청년 페이지 한 장만 조회한다.
+해당 페이지가 요청 크기만큼 채워졌으면 `partialResult=true`와 다음 번호인 `nextPage`를 반환하고,
+앱은 사용자가 `더 보기`를 선택할 때 그 번호를 다음 요청에 전달한다.
+마지막 페이지가 요청 크기보다 짧으면 `nextPage=null`이다.
 외부 전체 건수 계약이 확인되지 않았으므로 내부 `totalElements`, `totalPages`를 임의로 만들지 않는다.
 
 ### 13.3 정책 상세
@@ -551,7 +559,8 @@ Remove-Item Env:RUN_YOUTH_POLICY_LIVE_TEST
 - [x] 성공 응답의 최상위 JSON 타입·필드와 정책 식별자 확인
 - [x] Android 앱에서 실제 목록·상세 응답 확인
 - [ ] 성공 응답의 타입 래퍼 DTO와 정확한 페이지 메타데이터 확정
-- [ ] 온통청년 호출 제한 확인 후 최대 3페이지 값 재검토
+- [x] 한 요청당 한 페이지와 `nextPage` 기반 추가 조회 적용
+- [ ] 온통청년 호출 제한 확인 후 페이지 크기와 재시도 정책 재검토
 - [ ] 폐지·미등록 지역 코드 검증 자료를 백엔드에 둘지 결정
 - [x] 앱에서 `CHECK_REQUIRED`와 `partialResult` 표시 구현
 - [x] 시·도 전체 코드를 제공처에 전달하고 다른 시군구 전용 정책을 제외
@@ -565,7 +574,7 @@ Remove-Item Env:RUN_YOUTH_POLICY_LIVE_TEST
 - [x] 나이·지역·취업·소득·분야 조건을 받는 내부 검색 API
 - [x] 온통청년 실시간 목록·상세 조회와 앱 전용 DTO 변환
 - [x] 구조화 근거가 부족한 조건의 `CHECK_REQUIRED` 처리
-- [x] 최대 3페이지 확인과 `partialResult` 응답
+- [x] 한 페이지 확인과 `partialResult`·`nextPage` 응답
 - [x] 빈 결과·인증 실패·제공처 장애·잘못된 응답·정책 없음 처리
 - [x] 신청 URL과 참고 URL의 역할 분리
 - [x] fixture·필터 조합·오류·컨트롤러·앱 통합 흐름 검증
@@ -577,7 +586,7 @@ Remove-Item Env:RUN_YOUTH_POLICY_LIVE_TEST
 ### 디테일 단계로 이동한 항목
 
 1. 제공처 성공 응답의 타입 래퍼 DTO와 정확한 전체 건수·페이지 모델
-2. 호출 제한 확인 후 최대 조회 페이지와 재시도 정책 조정
+2. 호출 제한 확인 후 페이지 크기와 재시도 정책 조정
 3. 시도 전체·세종·폐지 지역 코드의 제공처 검증 자료
 4. 신청 기간 원문의 안전한 날짜 구조화와 정렬 정확도 개선
 5. 근거가 확인된 지원금 구조화
@@ -638,3 +647,68 @@ DB 구조, 갱신·삭제 정책, 캐시와 공통 API 계약을 변경하는 �
 
 서버 담당자는 V8 적용 후 GET에서 `saved=false`, PUT 이후 GET에서 동일 조건이 반환되는지 확인한다.
 이 계약이 배포된 다음 앱의 자동 추천 흐름을 사용할 수 있다.
+
+## 16. 추천 기능 1단계 — 확장 프로필과 공식 분야 계약
+
+이 절은 추천 기능의 현재 계약이다. 앞 절의 단일 취업 상태·소득 구간·임의 앱 분야는
+이전 앱 호환을 위해 잠시 수신하지만 새 앱은 아래 확장 필드를 사용한다.
+
+### 16.1 저장 구조
+
+- Flyway V11에서 기존 `employment_status`를 nullable로 바꾸고 `work_status`, `job_seeking`,
+  `education_status`를 추가한다.
+- 관심 주제는 사용자마다 여러 개이므로 `user_policy_interests` 별도 테이블에 저장한다.
+- 관심 주제 행은 `(user_id, interest_code)` 복합 PK로 중복을 막고 회원 탈퇴 시 함께 삭제한다.
+- 기존 저장값은 V11에서 근로·구직·교육 상태와 관심 주제로 한 번 변환한다.
+- 기존 `income_range`, `category`, `employment_status` 열은 구버전 앱 호환 기간 동안 삭제하지 않는다.
+
+### 16.2 새 기본 조건 요청
+
+```json
+{
+  "regionCode": "11",
+  "districtCode": "11680",
+  "workStatus": "UNEMPLOYED",
+  "jobSeeking": true,
+  "educationStatus": "GRADUATED",
+  "interests": ["EMPLOYMENT", "ASSET_BUILDING", "TRANSPORT"]
+}
+```
+
+- `regionCode`만 필수다. 나이는 요청으로 저장하지 않고 회원 생년월일에서 계산한다.
+- `workStatus`, `jobSeeking`, `educationStatus`는 서로 독립적인 선택 정보다.
+- `interests`는 빈 배열일 수 있으며, 빈 배열은 모든 분야 탐색을 막지 않는다.
+- 검색 요청의 `category`는 저장 관심사가 아니라 현재 둘러볼 공식 분야다.
+
+### 16.3 공식 정책 분야
+
+| 내부 코드 | 온통청년 대분류 |
+|---|---|
+| `EMPLOYMENT` | 일자리 |
+| `HOUSING` | 주거 |
+| `EDUCATION` | 교육 |
+| `WELFARE_CULTURE` | 복지문화 |
+| `PARTICIPATION_RIGHTS` | 참여권리 |
+
+`ASSET_BUILDING`과 `TRANSPORT`는 추천 관심 주제이며 공식 대분류 검색 코드로 보내지 않는다.
+구버전 검색 코드 `ASSET`, `TRANSPORT`, `CULTURE`는 전환 기간 동안만 수신한다.
+
+### 16.4 실패와 호환 처리
+
+- V11은 기존 정책 기본 조건 행을 유지한 채 새 필드와 관심 주제를 추가한다.
+- 새 앱 요청은 기존 소득값을 의도치 않게 지우지 않지만, 새 추천 판단에는 사용하지 않는다.
+- 알 수 없는 근로·교육·관심 코드는 HTTP 400으로 거절한다.
+- 교육 상태가 선택됐으나 제공처 필드만으로 확정할 수 없으면 제외하지 않고 `CHECK_REQUIRED` 사유를 추가한다.
+- 구버전 요청은 기존 필드에서 새 프로필 값을 계산해 저장·응답한다.
+
+### 16.5 완료 상태와 다음 단계
+
+- [x] V11 확장 마이그레이션 작성
+- [x] 새 저장 요청·응답과 기존 앱 호환 변환 구현
+- [x] 공식 대분류 검색·응답 변환 구현
+- [x] 근로·교육 조건 매칭과 불확실 조건 안내 구현
+- [x] 정책 도메인 테스트 통과
+- [ ] 실제 DB에 V11 적용 후 저장·재조회 수동 확인
+
+다음 단계에서는 이 프로필과 관심 주제를 입력으로 사용하는 설명 가능한 추천 점수와 이유를 구현한다.
+추천 점수, 제외 기준, 홈 노출 순서는 앱과 백엔드가 공유하는 별도 계약으로 확정한다.

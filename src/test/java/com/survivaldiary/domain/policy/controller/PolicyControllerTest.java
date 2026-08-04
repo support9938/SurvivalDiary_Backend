@@ -39,7 +39,7 @@ class PolicyControllerTest {
     @Test
     void 맞춤_조건은_POST_JSON으로_받고_부분_결과_정보를_반환한다() throws Exception {
         when(policyService.search(any())).thenReturn(
-                new PolicySearchResponse(List.of(), true, 3)
+                new PolicySearchResponse(List.of(), true, 1, 2)
         );
 
         mockMvc.perform(post("/api/policies/search")
@@ -52,6 +52,8 @@ class PolicyControllerTest {
                                   "employmentStatus": "JOB_SEEKING",
                                   "incomeRange": "BELOW_100",
                                   "category": "HOUSING",
+                                  "keyword": "월세",
+                                  "page": 1,
                                   "size": 20
                                 }
                                 """))
@@ -60,7 +62,8 @@ class PolicyControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.partialResult").value(true))
-                .andExpect(jsonPath("$.data.checkedProviderPages").value(3));
+                .andExpect(jsonPath("$.data.checkedProviderPages").value(1))
+                .andExpect(jsonPath("$.data.nextPage").value(2));
     }
 
     @Test

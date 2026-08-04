@@ -40,12 +40,21 @@ public class PolicyPreferenceService {
 
         PolicyPreference preference = policyPreferenceRepository.findById(userId)
                 .map(existing -> {
+                    boolean expandedProfile = request.usesExpandedProfile();
                     existing.update(
                             request.regionCode(),
                             request.districtCode(),
-                            request.employmentStatus(),
-                            request.incomeRange(),
-                            request.category()
+                            expandedProfile
+                                    ? legacyEmploymentStatus(request)
+                                    : request.employmentStatus(),
+                            expandedProfile
+                                    ? existing.getIncomeRange()
+                                    : request.incomeRange(),
+                            expandedProfile ? null : request.category(),
+                            request.resolvedWorkStatus(),
+                            request.resolvedJobSeeking(),
+                            request.resolvedEducationStatus(),
+                            request.resolvedInterests()
                     );
                     return existing;
                 })
@@ -53,9 +62,15 @@ public class PolicyPreferenceService {
                         userId,
                         request.regionCode(),
                         request.districtCode(),
-                        request.employmentStatus(),
+                        request.usesExpandedProfile()
+                                ? legacyEmploymentStatus(request)
+                                : request.employmentStatus(),
                         request.incomeRange(),
-                        request.category()
+                        request.usesExpandedProfile() ? null : request.category(),
+                        request.resolvedWorkStatus(),
+                        request.resolvedJobSeeking(),
+                        request.resolvedEducationStatus(),
+                        request.resolvedInterests()
                 ));
 
         PolicyPreference saved = policyPreferenceRepository.save(preference);
@@ -78,5 +93,22 @@ public class PolicyPreferenceService {
             return null;
         }
         return Period.between(birthDate, LocalDate.now()).getYears();
+    }
+
+    private String legacyEmploymentStatus(PolicyPreferenceRequest request) {
+        String workStatus = request.resolvedWorkStatus();
+        if ("EMPLOYED".equals(workStatus)) {
+            return "EMPLOYED";
+        }
+        if ("UNEMPLOYED".equals(workStatus)) {
+            return Boolean.TRUE.equals(request.resolvedJobSeeking())
+                    ? "JOB_SEEKING"
+                    : "UNEMPLOYED";
+        }
+        if (workStatus == null
+                && "STUDENT".equals(request.resolvedEducationStatus())) {
+            return "STUDENT";
+        }
+        return null;
     }
 }

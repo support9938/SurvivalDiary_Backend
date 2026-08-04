@@ -67,7 +67,11 @@ class PolicyPreferenceControllerTest {
                         null,
                         "JOB_SEEKING",
                         null,
-                        null
+                        null,
+                        "UNEMPLOYED",
+                        true,
+                        null,
+                        java.util.Set.of("EMPLOYMENT", "ASSET_BUILDING")
                 )
         );
 
@@ -76,7 +80,9 @@ class PolicyPreferenceControllerTest {
                         .content("""
                                 {
                                   "regionCode": "11",
-                                  "employmentStatus": "JOB_SEEKING"
+                                  "workStatus": "UNEMPLOYED",
+                                  "jobSeeking": true,
+                                  "interests": ["EMPLOYMENT", "ASSET_BUILDING"]
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -84,7 +90,10 @@ class PolicyPreferenceControllerTest {
                 .andExpect(jsonPath("$.data.saved").value(true))
                 .andExpect(jsonPath("$.data.districtCode").doesNotExist())
                 .andExpect(jsonPath("$.data.incomeRange").doesNotExist())
-                .andExpect(jsonPath("$.data.category").doesNotExist());
+                .andExpect(jsonPath("$.data.category").doesNotExist())
+                .andExpect(jsonPath("$.data.workStatus").value("UNEMPLOYED"))
+                .andExpect(jsonPath("$.data.jobSeeking").value(true))
+                .andExpect(jsonPath("$.data.interests.length()").value(2));
     }
 
     @Test

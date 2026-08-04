@@ -1,12 +1,18 @@
 package com.survivaldiary.domain.policy.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +33,16 @@ public class PolicyPreference {
     @Column(name = "district_code", length = 5)
     private String districtCode;
 
-    @Column(name = "employment_status", nullable = false, length = 30)
+    @Column(name = "work_status", length = 30)
+    private String workStatus;
+
+    @Column(name = "job_seeking")
+    private Boolean jobSeeking;
+
+    @Column(name = "education_status", length = 30)
+    private String educationStatus;
+
+    @Column(name = "employment_status", length = 30)
     private String employmentStatus;
 
     @Column(name = "income_range", length = 30)
@@ -35,6 +50,14 @@ public class PolicyPreference {
 
     @Column(length = 30)
     private String category;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "user_policy_interests",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "interest_code", nullable = false, length = 40)
+    private Set<String> interests = new LinkedHashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -48,10 +71,24 @@ public class PolicyPreference {
             String districtCode,
             String employmentStatus,
             String incomeRange,
-            String category
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
     ) {
         this.userId = userId;
-        update(regionCode, districtCode, employmentStatus, incomeRange, category);
+        update(
+                regionCode,
+                districtCode,
+                employmentStatus,
+                incomeRange,
+                category,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                interests
+        );
     }
 
     public static PolicyPreference create(
@@ -60,7 +97,11 @@ public class PolicyPreference {
             String districtCode,
             String employmentStatus,
             String incomeRange,
-            String category
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
     ) {
         return new PolicyPreference(
                 userId,
@@ -68,7 +109,11 @@ public class PolicyPreference {
                 districtCode,
                 employmentStatus,
                 incomeRange,
-                category
+                category,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                interests
         );
     }
 
@@ -77,13 +122,22 @@ public class PolicyPreference {
             String districtCode,
             String employmentStatus,
             String incomeRange,
-            String category
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
     ) {
         this.regionCode = regionCode;
         this.districtCode = districtCode;
         this.employmentStatus = employmentStatus;
         this.incomeRange = incomeRange;
         this.category = category;
+        this.workStatus = workStatus;
+        this.jobSeeking = jobSeeking;
+        this.educationStatus = educationStatus;
+        this.interests.clear();
+        this.interests.addAll(interests == null ? Set.of() : interests);
     }
 
     @PrePersist
