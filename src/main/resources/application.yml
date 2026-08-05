@@ -36,6 +36,15 @@ good-price:
     connect-timeout: 2s
     read-timeout: 5s
 
+public-facility:
+  provider:
+    base-url: https://api.data.go.kr
+    api-key: ${PUBLIC_DATA_API_KEY:}
+    connect-timeout: 2s
+    read-timeout: 10s
+    page-size: 1000
+    cache-ttl: 24h
+
 naver-map:
   geocoding:
     base-url: https://maps.apigw.ntruss.com
