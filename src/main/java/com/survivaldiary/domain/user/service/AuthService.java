@@ -49,7 +49,8 @@ public class AuthService {
         User user = User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .name(request.name())
+                .name(request.nickname())
+                .nickname(request.nickname())
                 .phone(request.phone())
                 .birthDate(request.birthDate())
                 .gender(request.gender())
@@ -93,7 +94,7 @@ public class AuthService {
                 .findByProviderAndProviderUserId(provider, profile.providerUserId())
                 .map(account -> userRepository.findById(account.getUserId())
                         .map(existingUser -> {
-                            existingUser.applySocialProfile(profile.email(), profile.name(),
+                            existingUser.applySocialProfile(profile.email(), profile.name(), profile.nickname(), profile.phone(),
                                     profile.gender(), profile.birthYear(), profile.birthDate());
                             return existingUser;
                         })
@@ -120,6 +121,8 @@ public class AuthService {
                 .email(profile.email())
                 .password(null)
                 .name(socialDisplayName(provider, profile))
+                .nickname(profile.nickname())
+                .phone(profile.phone())
                 .birthDate(profile.birthDate())
                 .birthYear(profile.birthYear())
                 .gender(profile.gender())
@@ -137,10 +140,12 @@ public class AuthService {
             SocialAccount.Provider provider,
             SocialProfile profile
     ) {
-        if (profile.name() != null && !profile.name().isBlank()) {
-            return profile.name().length() <= 50
-                    ? profile.name()
-                    : profile.name().substring(0, 50);
+        String displayName = profile.nickname();
+        if (displayName == null || displayName.isBlank()) displayName = profile.name();
+        if (displayName != null && !displayName.isBlank()) {
+            return displayName.length() <= 50
+                    ? displayName
+                    : displayName.substring(0, 50);
         }
         return provider == SocialAccount.Provider.KAKAO ? "카카오 생존러" : "네이버 생존러";
     }

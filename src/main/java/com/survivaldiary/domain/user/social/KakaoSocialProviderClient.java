@@ -52,13 +52,17 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
         }
         JsonNode account = body.path("kakao_account");
         String email = nullableText(account.path("email"));
-        String name = nullableText(account.path("profile").path("nickname"));
+        String nickname = nullableText(account.path("profile").path("nickname"));
+        if (nickname == null) nickname = nullableText(body.path("properties").path("nickname"));
+        String name = nullableText(account.path("name"));
+        if (name == null) name = nickname;
         String genderValue = nullableText(account.path("gender"));
         User.Gender gender = "male".equals(genderValue)
                 ? User.Gender.MALE
                 : "female".equals(genderValue) ? User.Gender.FEMALE : null;
         Integer birthYear = parseBirthYear(nullableText(account.path("birthyear")));
-        return new SocialProfile(body.path("id").asText(), email, name, gender,
+        return new SocialProfile(body.path("id").asText(), email, name, nickname,
+                nullableText(account.path("phone_number")), gender,
                 birthYear,
                 parseBirthDate(birthYear,
                         nullableText(account.path("birthday"))));
