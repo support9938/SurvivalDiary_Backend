@@ -81,7 +81,7 @@ erDiagram
 | 컬럼 | 타입 | Null | 키/제약 | 기본값 | 설명 |
 |---|---|---|---|---|---|
 | user_id | BIGINT UNSIGNED | N | PK, FK(users), CASCADE | | 로그인 사용자 ID |
-| age | TINYINT UNSIGNED | Y | | | 생년월일이 없는 사용자가 입력한 현재 만 나이 |
+| age | INT | Y | | | 생년월일이 없는 사용자가 입력한 현재 만 나이 |
 | region_code | CHAR(2) | N | | | 법정동 시도 코드 앞 2자리 |
 | district_code | CHAR(5) | Y | | | 법정동 시군구 코드 앞 5자리, 시도 전체면 NULL |
 | employment_status | VARCHAR(30) | N | | | 취업 상태 코드 |
