@@ -37,6 +37,9 @@ public class User {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(length = 50)
+    private String nickname;
+
     @Column(length = 20)
     private String phone;
 
@@ -64,12 +67,13 @@ public class User {
     private LocalDateTime createdAt;
 
     @Builder
-    private User(String email, String password, String name, String phone,
+    private User(String email, String password, String name, String nickname, String phone,
                  LocalDate birthDate, Integer birthYear, Gender gender, String region,
                  String signupInterest, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
+        this.nickname = nickname;
         this.phone = phone;
         this.birthDate = birthDate;
         this.birthYear = birthYear;
@@ -79,12 +83,16 @@ public class User {
         this.role = role != null ? role : Role.USER;
     }
 
-    public void applySocialProfile(String email, String name, Gender gender,
+    public void applySocialProfile(String email, String name, String nickname, String phone, Gender gender,
                                    Integer birthYear, LocalDate birthDate) {
         if (email != null && !email.isBlank()) this.email = email;
         if (name != null && !name.isBlank()) {
             this.name = name.length() <= 50 ? name : name.substring(0, 50);
         }
+        if (nickname != null && !nickname.isBlank()) {
+            this.nickname = nickname.length() <= 50 ? nickname : nickname.substring(0, 50);
+        }
+        if (phone != null && !phone.isBlank()) this.phone = phone;
         if (gender != null) this.gender = gender;
         if (birthYear != null) this.birthYear = birthYear;
         if (birthDate != null) this.birthDate = birthDate;
@@ -95,6 +103,19 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+    }
+
+    public void updateProfile(
+            String name,
+            String phone,
+            LocalDate birthDate,
+            Gender gender,
+            String region) {
+        this.name = name;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.region = region;
     }
 
     public enum Role { USER, ADMIN }

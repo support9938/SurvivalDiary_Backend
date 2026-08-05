@@ -25,7 +25,7 @@ public record SignupRequest(
         @Schema(description = "이름", example = "김민")
         @NotBlank(message = "이름은 필수입니다.")
         @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
-        String name,
+        String nickname,
 
         @Schema(description = "Phone number", example = "01012345678")
         @NotBlank(message = "Phone number is required.")
