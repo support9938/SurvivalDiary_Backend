@@ -33,7 +33,8 @@ public record CreateExpenseRequest(
         @Schema(description = "지출 금액", example = "9000")
         @NotNull(message = "금액은 필수입니다.")
         @Positive(message = "금액은 0보다 커야 합니다.")
-        Integer amount,
+        @Max(value = Integer.MAX_VALUE, message = "금액은 2,147,483,647원 이하여야 합니다.")
+        Long amount,
 
         @Schema(description = "지출 일시", example = "2026-07-31T00:00:00")
         @NotNull(message = "지출 일시는 필수입니다.")

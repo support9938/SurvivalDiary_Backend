@@ -8,6 +8,8 @@ import com.survivaldiary.domain.expense.repository.ExpenseRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ExpenseService {
+
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Seoul");
 
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
@@ -62,6 +66,12 @@ public class ExpenseService {
                     "직접 입력 지출의 등록 방식은 MANUAL이어야 합니다."
             );
         }
+        if (request.spentAt().toLocalDate().isAfter(LocalDate.now(BUSINESS_ZONE))) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "지출 날짜는 오늘 이후일 수 없습니다."
+            );
+        }
 
         String memo = request.memo() == null || request.memo().isBlank()
                 ? null
@@ -70,7 +80,7 @@ public class ExpenseService {
                 authenticatedUserId,
                 request.categoryId(),
                 request.title().trim(),
-                request.amount(),
+                normalizeAmount(request.amount()),
                 request.spentAt(),
                 memo
         );
@@ -96,7 +106,7 @@ public class ExpenseService {
                             authenticatedUserId,
                             request.categoryId(),
                             request.title().trim(),
-                            request.amount(),
+                            normalizeAmount(request.amount()),
                             request.spentAt(),
                             memo,
                             request.notificationSource().trim(),
@@ -117,5 +127,15 @@ public class ExpenseService {
 
     private String normalizeMemo(String memo) {
         return memo == null || memo.isBlank() ? null : memo.trim();
+    }
+
+    private int normalizeAmount(Long amount) {
+        if (amount == null || amount <= 0 || amount > Integer.MAX_VALUE) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "금액은 1원 이상 2,147,483,647원 이하여야 합니다."
+            );
+        }
+        return amount.intValue();
     }
 }
