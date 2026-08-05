@@ -8,12 +8,23 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Component
 public class PolicyMapper {
+
+    private static final String FIXED_PERIOD_CODE = "0057001";
+    private static final Pattern APPLICATION_PERIOD_PATTERN = Pattern.compile(
+            "^\\s*(20\\d{2})[./-]?(\\d{2})[./-]?(\\d{2})"
+                    + "\\s*[~∼～]\\s*"
+                    + "(20\\d{2})[./-]?(\\d{2})[./-]?(\\d{2})\\s*$"
+    );
 
     public PolicySummary toSummary(
             YouthPolicyItem item,
@@ -29,6 +40,7 @@ public class PolicyMapper {
                 null,
                 fallback(item.plcySprtCn(), "지원 내용을 확인해 주세요."),
                 blankToNull(item.aplyYmd()),
+                applicationEndDate(item),
                 targetText(item),
                 fallback(item.sprvsnInstCdNm(), "기관 정보 확인 필요"),
                 matchResult.status(),
@@ -48,6 +60,7 @@ public class PolicyMapper {
                 null,
                 fallback(item.plcySprtCn(), "지원 내용을 확인해 주세요."),
                 blankToNull(item.aplyYmd()),
+                applicationEndDate(item),
                 targetText(item),
                 fallback(item.sprvsnInstCdNm(), "기관 정보 확인 필요"),
                 fallback(item.operInstCdNm(), "운영 기관 정보 확인 필요"),
@@ -107,6 +120,34 @@ public class PolicyMapper {
         return isBlank(rawDocuments)
                 ? List.of()
                 : List.of(rawDocuments.trim());
+    }
+
+    private LocalDate applicationEndDate(YouthPolicyItem item) {
+        if (!FIXED_PERIOD_CODE.equals(normalize(item.aplyPrdSeCd()))
+                || isBlank(item.aplyYmd())) {
+            return null;
+        }
+
+        Matcher matcher = APPLICATION_PERIOD_PATTERN.matcher(item.aplyYmd());
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        try {
+            LocalDate startDate = localDate(matcher, 1);
+            LocalDate endDate = localDate(matcher, 4);
+            return endDate.isBefore(startDate) ? null : endDate;
+        } catch (DateTimeException exception) {
+            return null;
+        }
+    }
+
+    private LocalDate localDate(Matcher matcher, int startGroup) {
+        return LocalDate.of(
+                Integer.parseInt(matcher.group(startGroup)),
+                Integer.parseInt(matcher.group(startGroup + 1)),
+                Integer.parseInt(matcher.group(startGroup + 2))
+        );
     }
 
     private List<String> referenceUrls(YouthPolicyItem item) {

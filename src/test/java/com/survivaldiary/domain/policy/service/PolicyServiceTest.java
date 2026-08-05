@@ -244,6 +244,7 @@ class PolicyServiceTest {
                 null,
                 "지원 내용",
                 null,
+                null,
                 "지원 대상",
                 "주관 기관",
                 PolicyEligibilityStatus.MATCHED,
