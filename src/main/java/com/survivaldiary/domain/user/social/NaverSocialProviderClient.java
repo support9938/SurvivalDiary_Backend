@@ -1,5 +1,6 @@
 package com.survivaldiary.domain.user.social;
 
+import com.survivaldiary.domain.user.entity.User;
 import tools.jackson.databind.JsonNode;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.global.exception.BusinessException;
@@ -8,6 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import static com.survivaldiary.domain.user.social.KakaoSocialProviderClient.parseBirthDate;
+import static com.survivaldiary.domain.user.social.KakaoSocialProviderClient.parseBirthYear;
 
 @Component
 public class NaverSocialProviderClient implements SocialProviderClient {

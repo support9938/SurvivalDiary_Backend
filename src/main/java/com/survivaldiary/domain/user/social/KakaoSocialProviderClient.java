@@ -1,5 +1,6 @@
 package com.survivaldiary.domain.user.social;
 
+import com.survivaldiary.domain.user.entity.User;
 import tools.jackson.databind.JsonNode;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.global.exception.BusinessException;
@@ -8,6 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.time.DateTimeException;
+import java.time.LocalDate;
 
 @Component
 public class KakaoSocialProviderClient implements SocialProviderClient {
@@ -65,7 +69,7 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
                         nullableText(account.path("birthday"))));
     }
 
-    private static Integer parseBirthYear(String value) {
+    public static Integer parseBirthYear(String value) {
         try {
             return value == null ? null : Integer.valueOf(value);
         } catch (NumberFormatException exception) {
@@ -73,7 +77,7 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
         }
     }
 
-    private static LocalDate parseBirthDate(Integer birthYear, String birthday) {
+    public static LocalDate parseBirthDate(Integer birthYear, String birthday) {
         if (birthYear == null || birthday == null) return null;
         String normalized = birthday.replace("-", "");
         if (normalized.length() != 4) return null;
@@ -85,7 +89,7 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
         }
     }
 
-    private static String nullableText(JsonNode node) {
+    public static String nullableText(JsonNode node) {
         return node.isTextual() && !node.asText().isBlank() ? node.asText() : null;
     }
 }
