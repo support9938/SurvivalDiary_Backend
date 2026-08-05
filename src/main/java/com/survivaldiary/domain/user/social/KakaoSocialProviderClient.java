@@ -56,12 +56,14 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
         if (nickname == null) nickname = nullableText(body.path("properties").path("nickname"));
         String name = nullableText(account.path("name"));
         if (name == null) name = nickname;
+        String profileImageUrl = nullableText(account.path("profile").path("profile_image_url"));
+        if (profileImageUrl == null) profileImageUrl = nullableText(body.path("properties").path("profile_image"));
         String genderValue = nullableText(account.path("gender"));
         User.Gender gender = "male".equals(genderValue)
                 ? User.Gender.MALE
                 : "female".equals(genderValue) ? User.Gender.FEMALE : null;
         Integer birthYear = parseBirthYear(nullableText(account.path("birthyear")));
-        return new SocialProfile(body.path("id").asText(), email, name, nickname,
+        return new SocialProfile(body.path("id").asText(), email, name, nickname, profileImageUrl,
                 nullableText(account.path("phone_number")), gender,
                 birthYear,
                 parseBirthDate(birthYear,

@@ -58,6 +58,7 @@ public class NaverSocialProviderClient implements SocialProviderClient {
         String nickname = nullableText(response.path("nickname"));
         String name = nullableText(response.path("name"));
         if (name == null) name = nickname;
+        String profileImageUrl = nullableText(response.path("profile_image"));
         String genderValue = nullableText(response.path("gender"));
         User.Gender gender = "M".equals(genderValue)
                 ? User.Gender.MALE
@@ -68,6 +69,7 @@ public class NaverSocialProviderClient implements SocialProviderClient {
                 nullableText(response.path("email")),
                 name,
                 nickname,
+                profileImageUrl,
                 nullableText(response.path("mobile")),
                 gender,
                 birthYear,

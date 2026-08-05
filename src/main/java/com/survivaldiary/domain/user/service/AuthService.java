@@ -94,7 +94,7 @@ public class AuthService {
                 .findByProviderAndProviderUserId(provider, profile.providerUserId())
                 .map(account -> userRepository.findById(account.getUserId())
                         .map(existingUser -> {
-                            existingUser.applySocialProfile(profile.email(), profile.name(), profile.nickname(), profile.phone(),
+                            existingUser.applySocialProfile(profile.email(), profile.name(), profile.nickname(), profile.profileImageUrl(), profile.phone(),
                                     profile.gender(), profile.birthYear(), profile.birthDate());
                             return existingUser;
                         })
@@ -122,6 +122,7 @@ public class AuthService {
                 .password(null)
                 .name(socialDisplayName(provider, profile))
                 .nickname(profile.nickname())
+                .profileImageUrl(profile.profileImageUrl())
                 .phone(profile.phone())
                 .birthDate(profile.birthDate())
                 .birthYear(profile.birthYear())
