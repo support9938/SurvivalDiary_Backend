@@ -1,6 +1,6 @@
 package com.survivaldiary.domain.user.social;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.survivaldiary.domain.user.dto.WebSocialLoginRequest;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.global.exception.BusinessException;
