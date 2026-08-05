@@ -43,6 +43,9 @@ public class User {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    @Column(name = "birth_year")
+    private Integer birthYear;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private Gender gender;
@@ -62,17 +65,29 @@ public class User {
 
     @Builder
     private User(String email, String password, String name, String phone,
-                 LocalDate birthDate, Gender gender, String region,
+                 LocalDate birthDate, Integer birthYear, Gender gender, String region,
                  String signupInterest, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.birthDate = birthDate;
+        this.birthYear = birthYear;
         this.gender = gender;
         this.region = region;
         this.signupInterest = signupInterest;
         this.role = role != null ? role : Role.USER;
+    }
+
+    public void applySocialProfile(String email, String name, Gender gender,
+                                   Integer birthYear, LocalDate birthDate) {
+        if (email != null && !email.isBlank()) this.email = email;
+        if (name != null && !name.isBlank()) {
+            this.name = name.length() <= 50 ? name : name.substring(0, 50);
+        }
+        if (gender != null) this.gender = gender;
+        if (birthYear != null) this.birthYear = birthYear;
+        if (birthDate != null) this.birthDate = birthDate;
     }
 
     @PrePersist

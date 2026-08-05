@@ -1,13 +1,16 @@
 package com.survivaldiary.domain.user.social;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.survivaldiary.domain.user.entity.SocialAccount;
+import com.survivaldiary.domain.user.entity.User;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 
 @Component
 public class KakaoSocialProviderClient implements SocialProviderClient {
@@ -50,7 +53,35 @@ public class KakaoSocialProviderClient implements SocialProviderClient {
         JsonNode account = body.path("kakao_account");
         String email = nullableText(account.path("email"));
         String name = nullableText(account.path("profile").path("nickname"));
-        return new SocialProfile(body.path("id").asText(), email, name);
+        String genderValue = nullableText(account.path("gender"));
+        User.Gender gender = "male".equals(genderValue)
+                ? User.Gender.MALE
+                : "female".equals(genderValue) ? User.Gender.FEMALE : null;
+        Integer birthYear = parseBirthYear(nullableText(account.path("birthyear")));
+        return new SocialProfile(body.path("id").asText(), email, name, gender,
+                birthYear,
+                parseBirthDate(birthYear,
+                        nullableText(account.path("birthday"))));
+    }
+
+    private static Integer parseBirthYear(String value) {
+        try {
+            return value == null ? null : Integer.valueOf(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private static LocalDate parseBirthDate(Integer birthYear, String birthday) {
+        if (birthYear == null || birthday == null) return null;
+        String normalized = birthday.replace("-", "");
+        if (normalized.length() != 4) return null;
+        try {
+            return LocalDate.of(birthYear, Integer.parseInt(normalized.substring(0, 2)),
+                    Integer.parseInt(normalized.substring(2, 4)));
+        } catch (DateTimeException | NumberFormatException exception) {
+            return null;
+        }
     }
 
     private static String nullableText(JsonNode node) {

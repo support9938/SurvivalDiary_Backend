@@ -2,8 +2,10 @@ package com.survivaldiary.domain.user.social;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.survivaldiary.domain.user.entity.User;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 class SocialProviderClientTest {
 
@@ -16,7 +18,10 @@ class SocialProviderClientTest {
                   "id": 123456789,
                   "kakao_account": {
                     "email": "kakao@example.com",
-                    "profile": {"nickname": "카카오 사용자"}
+                    "gender": "female",
+                    "birthyear": "1995",
+                    "birthday": "0214",
+                    "profile": {"nickname": "Kakao User"}
                   }
                 }
                 """);
@@ -25,7 +30,9 @@ class SocialProviderClientTest {
 
         assertThat(profile.providerUserId()).isEqualTo("123456789");
         assertThat(profile.email()).isEqualTo("kakao@example.com");
-        assertThat(profile.name()).isEqualTo("카카오 사용자");
+        assertThat(profile.name()).isEqualTo("Kakao User");
+        assertThat(profile.gender()).isEqualTo(User.Gender.FEMALE);
+        assertThat(profile.birthDate()).isEqualTo(LocalDate.of(1995, 2, 14));
     }
 
     @Test
@@ -37,7 +44,10 @@ class SocialProviderClientTest {
                   "response": {
                     "id": "naver-user-id",
                     "email": "naver@example.com",
-                    "name": "네이버 사용자"
+                    "gender": "M",
+                    "birthyear": "1990",
+                    "birthday": "01-02",
+                    "name": "Naver User"
                   }
                 }
                 """);
@@ -46,6 +56,8 @@ class SocialProviderClientTest {
 
         assertThat(profile.providerUserId()).isEqualTo("naver-user-id");
         assertThat(profile.email()).isEqualTo("naver@example.com");
-        assertThat(profile.name()).isEqualTo("네이버 사용자");
+        assertThat(profile.name()).isEqualTo("Naver User");
+        assertThat(profile.gender()).isEqualTo(User.Gender.MALE);
+        assertThat(profile.birthDate()).isEqualTo(LocalDate.of(1990, 1, 2));
     }
 }

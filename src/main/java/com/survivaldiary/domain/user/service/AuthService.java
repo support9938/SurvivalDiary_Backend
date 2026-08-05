@@ -92,6 +92,11 @@ public class AuthService {
         User user = socialAccountRepository
                 .findByProviderAndProviderUserId(provider, profile.providerUserId())
                 .map(account -> userRepository.findById(account.getUserId())
+                        .map(existingUser -> {
+                            existingUser.applySocialProfile(profile.email(), profile.name(),
+                                    profile.gender(), profile.birthYear(), profile.birthDate());
+                            return existingUser;
+                        })
                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)))
                 .orElseGet(() -> createSocialUser(provider, profile));
         return issueTokens(user);
@@ -112,9 +117,12 @@ public class AuthService {
     ) {
         User user = userRepository.save(User.builder()
                 // 이메일이 같다는 이유로 기존 계정과 자동 병합하지 않는다.
-                .email(null)
+                .email(profile.email())
                 .password(null)
                 .name(socialDisplayName(provider, profile))
+                .birthDate(profile.birthDate())
+                .birthYear(profile.birthYear())
+                .gender(profile.gender())
                 .role(User.Role.USER)
                 .build());
         socialAccountRepository.save(SocialAccount.builder()
