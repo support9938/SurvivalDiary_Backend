@@ -1,6 +1,8 @@
 package com.survivaldiary.domain.policy.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,6 +12,11 @@ import java.util.Set;
 
 @Schema(description = "맞춤 정책 기본 조건 저장 요청")
 public record PolicyPreferenceRequest(
+
+        @Schema(description = "사용자가 입력한 현재 만 나이. 회원 생년월일이 없을 때만 사용", example = "27")
+        @Min(value = 18, message = "나이는 만 18세 이상이어야 합니다.")
+        @Max(value = 39, message = "나이는 만 39세 이하여야 합니다.")
+        Integer age,
 
         @Schema(description = "법정동 시도 코드 앞 2자리", example = "11")
         @NotBlank(message = "시도 코드는 필수입니다.")

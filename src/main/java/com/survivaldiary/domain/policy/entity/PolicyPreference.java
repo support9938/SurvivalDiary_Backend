@@ -27,6 +27,9 @@ public class PolicyPreference {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(name = "age")
+    private Integer age;
+
     @Column(name = "region_code", nullable = false, length = 2)
     private String regionCode;
 
@@ -67,6 +70,7 @@ public class PolicyPreference {
 
     private PolicyPreference(
             Long userId,
+            Integer age,
             String regionCode,
             String districtCode,
             String employmentStatus,
@@ -79,6 +83,7 @@ public class PolicyPreference {
     ) {
         this.userId = userId;
         update(
+                age,
                 regionCode,
                 districtCode,
                 employmentStatus,
@@ -93,6 +98,7 @@ public class PolicyPreference {
 
     public static PolicyPreference create(
             Long userId,
+            Integer age,
             String regionCode,
             String districtCode,
             String employmentStatus,
@@ -105,6 +111,7 @@ public class PolicyPreference {
     ) {
         return new PolicyPreference(
                 userId,
+                age,
                 regionCode,
                 districtCode,
                 employmentStatus,
@@ -118,6 +125,7 @@ public class PolicyPreference {
     }
 
     public void update(
+            Integer age,
             String regionCode,
             String districtCode,
             String employmentStatus,
@@ -128,6 +136,7 @@ public class PolicyPreference {
             String educationStatus,
             Set<String> interests
     ) {
+        this.age = age;
         this.regionCode = regionCode;
         this.districtCode = districtCode;
         this.employmentStatus = employmentStatus;
