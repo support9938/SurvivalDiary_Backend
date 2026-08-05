@@ -7,12 +7,14 @@ public record SocialProfile(
         String providerUserId,
         String email,
         String name,
+        String nickname,
+        String phone,
         User.Gender gender,
         Integer birthYear,
         LocalDate birthDate
 ) {
 
     public SocialProfile(String providerUserId, String email, String name) {
-        this(providerUserId, email, name, null, null, null);
+        this(providerUserId, email, name, name, null, null, null, null);
     }
 }
