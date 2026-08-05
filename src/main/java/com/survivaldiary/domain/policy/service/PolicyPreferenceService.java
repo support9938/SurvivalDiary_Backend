@@ -24,10 +24,12 @@ public class PolicyPreferenceService {
     @Transactional(readOnly = true)
     public PolicyPreferenceResponse get(Long userId) {
         User user = findUser(userId);
-        Integer age = calculateAge(user.getBirthDate());
         return policyPreferenceRepository.findById(userId)
-                .map(preference -> PolicyPreferenceResponse.from(preference, age))
-                .orElseGet(() -> PolicyPreferenceResponse.empty(age));
+                .map(preference -> PolicyPreferenceResponse.from(
+                        preference,
+                        resolveAge(user, preference.getAge())
+                ))
+                .orElseGet(() -> PolicyPreferenceResponse.empty(resolveAge(user, null)));
     }
 
     @Transactional
@@ -42,6 +44,7 @@ public class PolicyPreferenceService {
                 .map(existing -> {
                     boolean expandedProfile = request.usesExpandedProfile();
                     existing.update(
+                            request.age(),
                             request.regionCode(),
                             request.districtCode(),
                             expandedProfile
@@ -60,6 +63,7 @@ public class PolicyPreferenceService {
                 })
                 .orElseGet(() -> PolicyPreference.create(
                         userId,
+                        request.age(),
                         request.regionCode(),
                         request.districtCode(),
                         request.usesExpandedProfile()
@@ -74,7 +78,7 @@ public class PolicyPreferenceService {
                 ));
 
         PolicyPreference saved = policyPreferenceRepository.save(preference);
-        return PolicyPreferenceResponse.from(saved, calculateAge(user.getBirthDate()));
+        return PolicyPreferenceResponse.from(saved, resolveAge(user, saved.getAge()));
     }
 
     private User findUser(Long userId) {
@@ -88,11 +92,16 @@ public class PolicyPreferenceService {
         }
     }
 
-    private Integer calculateAge(LocalDate birthDate) {
-        if (birthDate == null) {
-            return null;
+    private Integer resolveAge(User user, Integer savedAge) {
+        LocalDate birthDate = user.getBirthDate();
+        if (birthDate != null) {
+            return Period.between(birthDate, LocalDate.now()).getYears();
         }
-        return Period.between(birthDate, LocalDate.now()).getYears();
+        if (savedAge != null) {
+            return savedAge;
+        }
+        Integer birthYear = user.getBirthYear();
+        return birthYear == null ? null : LocalDate.now().getYear() - birthYear;
     }
 
     private String legacyEmploymentStatus(PolicyPreferenceRequest request) {

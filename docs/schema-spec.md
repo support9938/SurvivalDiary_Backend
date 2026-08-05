@@ -81,6 +81,7 @@ erDiagram
 | 컬럼 | 타입 | Null | 키/제약 | 기본값 | 설명 |
 |---|---|---|---|---|---|
 | user_id | BIGINT UNSIGNED | N | PK, FK(users), CASCADE | | 로그인 사용자 ID |
+| age | TINYINT UNSIGNED | Y | | | 생년월일이 없는 사용자가 입력한 현재 만 나이 |
 | region_code | CHAR(2) | N | | | 법정동 시도 코드 앞 2자리 |
 | district_code | CHAR(5) | Y | | | 법정동 시군구 코드 앞 5자리, 시도 전체면 NULL |
 | employment_status | VARCHAR(30) | N | | | 취업 상태 코드 |
@@ -89,7 +90,8 @@ erDiagram
 | created_at | DATETIME | N | | NOW | 최초 저장 시각 |
 | updated_at | DATETIME | N | | NOW | 마지막 변경 시각 |
 
-나이는 시간에 따라 바뀌므로 이 테이블에 저장하지 않고 `users.birth_date`에서 계산한다.
+`users.birth_date`가 있으면 계산한 만 나이를 우선 사용한다. 소셜 제공처가 생년월일을 제공하지
+않은 경우에만 이 테이블의 `age`를 대체값으로 사용하고, 조건 수정 시 최신 입력값으로 갱신한다.
 
 ### user_locations — 사용자 위치 설정
 

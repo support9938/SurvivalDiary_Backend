@@ -67,6 +67,7 @@ class PolicyPreferenceServiceTest {
     void 기존_조건은_같은_사용자_행에서_전체_교체한다() {
         PolicyPreference existing = PolicyPreference.create(
                 7L,
+                25,
                 "11",
                 "11680",
                 "JOB_SEEKING",
@@ -84,6 +85,7 @@ class PolicyPreferenceServiceTest {
         var response = service.save(7L, request("26", null));
 
         assertThat(existing.getRegionCode()).isEqualTo("26");
+        assertThat(existing.getAge()).isEqualTo(27);
         assertThat(existing.getDistrictCode()).isNull();
         assertThat(existing.getIncomeRange()).isEqualTo("BELOW_100");
         assertThat(existing.getCategory()).isNull();
@@ -91,6 +93,41 @@ class PolicyPreferenceServiceTest {
         assertThat(existing.getJobSeeking()).isTrue();
         assertThat(existing.getInterests()).containsExactly("ASSET_BUILDING");
         assertThat(response.regionCode()).isEqualTo("26");
+    }
+
+    @Test
+    void 생년월일이_없는_소셜_사용자는_입력한_나이를_추천_조건으로_사용한다() {
+        User socialUser = User.builder()
+                .email("social@example.com")
+                .name("소셜 사용자")
+                .role(User.Role.USER)
+                .build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(socialUser));
+        when(preferenceRepository.findById(7L)).thenReturn(Optional.empty());
+        when(preferenceRepository.save(any(PolicyPreference.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var saved = service.save(7L, request("11", null));
+        when(preferenceRepository.findById(7L)).thenReturn(Optional.of(
+                PolicyPreference.create(
+                        7L,
+                        saved.age(),
+                        "11",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Set.of()
+                )
+        ));
+
+        var loaded = service.get(7L);
+
+        assertThat(saved.age()).isEqualTo(27);
+        assertThat(loaded.age()).isEqualTo(27);
     }
 
     @Test
@@ -130,6 +167,7 @@ class PolicyPreferenceServiceTest {
 
     private PolicyPreferenceRequest request(String regionCode, String districtCode) {
         return new PolicyPreferenceRequest(
+                27,
                 regionCode,
                 districtCode,
                 "JOB_SEEKING",
