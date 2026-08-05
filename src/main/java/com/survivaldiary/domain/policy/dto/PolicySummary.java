@@ -2,6 +2,7 @@ package com.survivaldiary.domain.policy.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Schema(description = "맞춤 정책 목록 항목")
@@ -14,6 +15,7 @@ public record PolicySummary(
         @Schema(description = "구조화된 지원금. 확인 불가 시 null") Long supportAmount,
         @Schema(description = "지원 내용 원문") String supportText,
         @Schema(description = "신청 기간 원문") String applicationPeriodText,
+        @Schema(description = "안전하게 해석된 신청 종료일. 상시·마감·해석 불가 시 null") LocalDate applicationEndDate,
         @Schema(description = "지원 대상 요약") String target,
         @Schema(description = "주관 기관") String agency,
         @Schema(description = "조건 일치 판정") PolicyEligibilityStatus eligibilityStatus,

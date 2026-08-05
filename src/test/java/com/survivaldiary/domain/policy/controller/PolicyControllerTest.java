@@ -134,7 +134,8 @@ class PolicyControllerTest {
                         "정책 설명",
                         null,
                         "지원 내용",
-                        null,
+                        "20260701~20260731",
+                        java.time.LocalDate.of(2026, 7, 31),
                         "지원 대상",
                         "주관 기관",
                         "운영 기관",
@@ -149,6 +150,7 @@ class PolicyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.data.policyId").value("POLICY-A"))
+                .andExpect(jsonPath("$.data.applicationEndDate").value("2026-07-31"))
                 .andExpect(jsonPath("$.data.supportAmount").doesNotExist());
     }
 }
