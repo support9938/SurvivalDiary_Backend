@@ -39,3 +39,6 @@ out/
 ### Local secrets ###
 application-secret.yml
 src/main/resources/application-secret.yml.example
+
+### User uploads ###
+uploads/

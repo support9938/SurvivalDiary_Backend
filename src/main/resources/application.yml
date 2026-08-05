@@ -10,9 +10,16 @@ spring:
   flyway:
     locations: classpath:db/migration
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  upload:
+    profile-directory: ${PROFILE_IMAGE_DIRECTORY:uploads/profile}
 
 jwt:
   # 환경변수 JWT_SECRET(Base64, 256bit 이상)으로 주입한다 — 기본값 없음, 미설정 시 기동 실패

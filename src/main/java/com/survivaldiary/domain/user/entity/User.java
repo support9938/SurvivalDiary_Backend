@@ -105,6 +105,19 @@ public class User {
         }
     }
 
+    public void updateProfile(
+            String name,
+            String phone,
+            LocalDate birthDate,
+            Gender gender,
+            String region) {
+        this.name = name;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.region = region;
+    }
+
     public enum Role { USER, ADMIN }
 
     public enum Gender { MALE, FEMALE }

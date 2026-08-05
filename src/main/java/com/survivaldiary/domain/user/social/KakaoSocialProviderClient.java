@@ -2,15 +2,12 @@ package com.survivaldiary.domain.user.social;
 
 import tools.jackson.databind.JsonNode;
 import com.survivaldiary.domain.user.entity.SocialAccount;
-import com.survivaldiary.domain.user.entity.User;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import java.time.DateTimeException;
-import java.time.LocalDate;
 
 @Component
 public class KakaoSocialProviderClient implements SocialProviderClient {

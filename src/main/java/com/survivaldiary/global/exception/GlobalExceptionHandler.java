@@ -4,6 +4,7 @@ import com.survivaldiary.global.common.ApiResponse;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +34,14 @@ public class GlobalExceptionHandler {
         ErrorCode code = ErrorCode.INVALID_INPUT;
         return ResponseEntity.status(code.getStatus())
                 .body(ApiResponse.error(code, message));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOversizedUpload(
+            MaxUploadSizeExceededException e) {
+        ErrorCode code = ErrorCode.INVALID_INPUT;
+        return ResponseEntity.status(code.getStatus())
+                .body(ApiResponse.error(code, "프로필 사진은 5MB 이하여야 합니다."));
     }
 
     /** 그 외 예상하지 못한 예외 — 상세는 서버 로그에만 남기고 클라이언트에는 일반 메시지 */
