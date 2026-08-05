@@ -55,10 +55,9 @@ public class NaverSocialProviderClient implements SocialProviderClient {
         if (providerUserId == null) {
             throw new IllegalArgumentException("Naver user id is missing");
         }
+        String nickname = nullableText(response.path("nickname"));
         String name = nullableText(response.path("name"));
-        if (name == null) {
-            name = nullableText(response.path("nickname"));
-        }
+        if (name == null) name = nickname;
         String genderValue = nullableText(response.path("gender"));
         User.Gender gender = "M".equals(genderValue)
                 ? User.Gender.MALE
@@ -68,6 +67,8 @@ public class NaverSocialProviderClient implements SocialProviderClient {
                 providerUserId,
                 nullableText(response.path("email")),
                 name,
+                nickname,
+                nullableText(response.path("mobile")),
                 gender,
                 birthYear,
                 parseBirthDate(birthYear,
