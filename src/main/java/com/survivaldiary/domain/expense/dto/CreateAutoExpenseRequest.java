@@ -32,7 +32,8 @@ public record CreateAutoExpenseRequest(
         @Schema(description = "지출 금액", example = "5500")
         @NotNull(message = "금액은 필수입니다.")
         @Positive(message = "금액은 0보다 커야 합니다.")
-        Integer amount,
+        @Max(value = Integer.MAX_VALUE, message = "금액은 2,147,483,647원 이하여야 합니다.")
+        Long amount,
 
         @Schema(description = "알림이 감지된 결제 일시", example = "2026-08-03T09:42:00")
         @NotNull(message = "지출 일시는 필수입니다.")

@@ -60,7 +60,7 @@ class ExpenseServiceTest {
                 1L,
                 2L,
                 "스타벅스 강남점",
-                5500,
+                5500L,
                 LocalDateTime.of(2026, 8, 3, 9, 42),
                 null,
                 "토스",

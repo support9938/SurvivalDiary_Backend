@@ -4,6 +4,7 @@ import com.survivaldiary.global.common.ApiResponse;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +34,17 @@ public class GlobalExceptionHandler {
         ErrorCode code = ErrorCode.INVALID_INPUT;
         return ResponseEntity.status(code.getStatus())
                 .body(ApiResponse.error(code, message));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnreadableRequest(
+            HttpMessageNotReadableException e) {
+        ErrorCode code = ErrorCode.INVALID_INPUT;
+        return ResponseEntity.status(code.getStatus())
+                .body(ApiResponse.error(
+                        code,
+                        "요청 값의 형식이나 허용 범위를 확인해 주세요."
+                ));
     }
 
     /** 그 외 예상하지 못한 예외 — 상세는 서버 로그에만 남기고 클라이언트에는 일반 메시지 */
