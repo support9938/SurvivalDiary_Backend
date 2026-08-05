@@ -3,6 +3,7 @@ package com.survivaldiary.domain.policy.controller;
 import com.survivaldiary.domain.policy.dto.PolicyCategory;
 import com.survivaldiary.domain.policy.dto.PolicyDetail;
 import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
+import com.survivaldiary.domain.policy.service.PolicyRecommendationService;
 import com.survivaldiary.domain.policy.service.PolicyService;
 import com.survivaldiary.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,15 +26,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PolicyControllerTest {
 
     private PolicyService policyService;
+    private PolicyRecommendationService policyRecommendationService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         policyService = mock(PolicyService.class);
+        policyRecommendationService = mock(PolicyRecommendationService.class);
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new PolicyController(policyService))
+                .standaloneSetup(new PolicyController(policyService, policyRecommendationService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    void 저장된_사용자_조건으로_추천_목록을_조회한다() throws Exception {
+        when(policyRecommendationService.recommend(any(), any())).thenReturn(
+                new PolicySearchResponse(List.of(), false, 1, null)
+        );
+
+        mockMvc.perform(post("/api/policies/recommendations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "category": "HOUSING",
+                                  "keyword": " 월세 ",
+                                  "page": 1,
+                                  "size": 20
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items").isArray());
     }
 
     @Test

@@ -36,6 +36,11 @@ public class PolicyRecommendationEvaluator {
                 && categoryType(item) == PolicyCategory.EMPLOYMENT) {
             positiveReasons.add("구직 중인 사용자에게 관련된 일자리 정책이에요.");
         }
+        if (request.requestedWorkStatus() != null
+                && categoryType(item) == PolicyCategory.EMPLOYMENT
+                && !Boolean.TRUE.equals(request.jobSeeking())) {
+            positiveReasons.add("현재 근로 상황과 관련된 일자리 정책이에요.");
+        }
         if (request.requestedEducationStatus() != null
                 && categoryType(item) == PolicyCategory.EDUCATION) {
             positiveReasons.add("현재 교육 상태와 관련된 정책이에요.");
@@ -66,6 +71,8 @@ public class PolicyRecommendationEvaluator {
 
         if (interestMatch.matched()
                 || Boolean.TRUE.equals(request.jobSeeking())
+                        && categoryType(item) == PolicyCategory.EMPLOYMENT
+                || request.requestedWorkStatus() != null
                         && categoryType(item) == PolicyCategory.EMPLOYMENT
                 || request.requestedEducationStatus() != null
                         && categoryType(item) == PolicyCategory.EDUCATION) {

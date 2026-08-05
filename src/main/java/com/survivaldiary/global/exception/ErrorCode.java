@@ -43,6 +43,11 @@ public enum ErrorCode {
             "정책 제공처 응답을 처리할 수 없습니다."
     ),
     INVALID_POLICY_FILTER(HttpStatus.BAD_REQUEST, "Y004", "정책 검색 조건이 올바르지 않습니다."),
+    POLICY_PREFERENCE_REQUIRED(
+            HttpStatus.BAD_REQUEST,
+            "Y005",
+            "맞춤 정책 추천을 위한 기본 조건을 먼저 저장해 주세요."
+    ),
 
     // 장소 / 지도
     MAP_PROVIDER_UNAVAILABLE(

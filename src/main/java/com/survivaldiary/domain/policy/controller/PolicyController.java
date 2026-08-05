@@ -1,8 +1,10 @@
 package com.survivaldiary.domain.policy.controller;
 
 import com.survivaldiary.domain.policy.dto.PolicyDetail;
+import com.survivaldiary.domain.policy.dto.PolicyRecommendationRequest;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
+import com.survivaldiary.domain.policy.service.PolicyRecommendationService;
 import com.survivaldiary.domain.policy.service.PolicyService;
 import com.survivaldiary.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,9 +26,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class PolicyController {
 
     private final PolicyService policyService;
+    private final PolicyRecommendationService policyRecommendationService;
 
-    public PolicyController(PolicyService policyService) {
+    public PolicyController(
+            PolicyService policyService,
+            PolicyRecommendationService policyRecommendationService
+    ) {
         this.policyService = policyService;
+        this.policyRecommendationService = policyRecommendationService;
+    }
+
+    @Operation(
+            summary = "저장 조건 기반 맞춤 정책 추천",
+            description = "로그인 사용자의 저장된 나이·지역·현재 상황을 적용하고, 정책 분야와 검색어는 "
+                    + "목록 탐색 조건으로만 사용한다."
+    )
+    @PostMapping("/recommendations")
+    public ResponseEntity<ApiResponse<PolicySearchResponse>> recommendations(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody PolicyRecommendationRequest request
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ApiResponse.ok(policyRecommendationService.recommend(userId, request)));
     }
 
     @Operation(

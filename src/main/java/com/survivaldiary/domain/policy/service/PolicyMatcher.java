@@ -26,9 +26,7 @@ public class PolicyMatcher {
         if (!matchesRegion(item.zipCd(), request, checkReasons)) {
             return PolicyMatchResult.excluded();
         }
-        if (!matchesEmployment(item, request.requestedWorkStatus(), checkReasons)) {
-            return PolicyMatchResult.excluded();
-        }
+        addEmploymentCheck(item, request.requestedWorkStatus(), checkReasons);
         addEducationCheck(item, request.requestedEducationStatus(), checkReasons);
         if (!matchesIncome(item, request.incomeRange(), checkReasons)) {
             return PolicyMatchResult.excluded();
@@ -84,18 +82,18 @@ public class PolicyMatcher {
         return codes.contains(request.regionCode() + "000");
     }
 
-    private boolean matchesEmployment(
+    private void addEmploymentCheck(
             YouthPolicyItem item,
             String workStatus,
             List<String> checkReasons
     ) {
         if (workStatus == null) {
-            return true;
+            return;
         }
 
         Set<String> jobCodes = tokens(item.jobCd());
         if (jobCodes.contains(JOB_UNLIMITED)) {
-            return true;
+            return;
         }
 
         String expectedCode = switch (workStatus) {
@@ -113,9 +111,11 @@ public class PolicyMatcher {
 
         if (expectedCode == null || jobCodes.isEmpty()) {
             checkReasons.add("근로 상태 조건을 공고문에서 확인해야 합니다.");
-            return true;
+            return;
         }
-        return jobCodes.contains(expectedCode);
+        if (!jobCodes.contains(expectedCode)) {
+            checkReasons.add("현재 근로 상태로 신청할 수 있는지 확인해야 합니다.");
+        }
     }
 
     private void addEducationCheck(
