@@ -40,6 +40,9 @@ public class User {
     @Column(length = 50)
     private String nickname;
 
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
+
     @Column(length = 20)
     private String phone;
 
@@ -67,13 +70,14 @@ public class User {
     private LocalDateTime createdAt;
 
     @Builder
-    private User(String email, String password, String name, String nickname, String phone,
+    private User(String email, String password, String name, String nickname, String profileImageUrl, String phone,
                  LocalDate birthDate, Integer birthYear, Gender gender, String region,
                  String signupInterest, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.nickname = nickname;
+        this.profileImageUrl = profileImageUrl;
         this.phone = phone;
         this.birthDate = birthDate;
         this.birthYear = birthYear;
@@ -83,7 +87,7 @@ public class User {
         this.role = role != null ? role : Role.USER;
     }
 
-    public void applySocialProfile(String email, String name, String nickname, String phone, Gender gender,
+    public void applySocialProfile(String email, String name, String nickname, String profileImageUrl, String phone, Gender gender,
                                    Integer birthYear, LocalDate birthDate) {
         if (email != null && !email.isBlank()) this.email = email;
         if (name != null && !name.isBlank()) {
@@ -92,6 +96,7 @@ public class User {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname.length() <= 50 ? nickname : nickname.substring(0, 50);
         }
+        if (profileImageUrl != null && !profileImageUrl.isBlank()) this.profileImageUrl = profileImageUrl;
         if (phone != null && !phone.isBlank()) this.phone = phone;
         if (gender != null) this.gender = gender;
         if (birthYear != null) this.birthYear = birthYear;

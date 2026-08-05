@@ -20,7 +20,7 @@ class SocialProviderClientTest {
                     "gender": "female",
                     "birthyear": "1995",
                     "birthday": "0214",
-                    "profile": {"nickname": "Kakao User"}
+                    "profile": {"nickname": "Kakao User", "profile_image_url": "https://kakao.example/profile.jpg"}
                   }
                 }
                 """);
@@ -31,6 +31,7 @@ class SocialProviderClientTest {
         assertThat(profile.email()).isEqualTo("kakao@example.com");
         assertThat(profile.phone()).isEqualTo("+82 10-1234-5678");
         assertThat(profile.name()).isEqualTo("Kakao User");
+        assertThat(profile.profileImageUrl()).isEqualTo("https://kakao.example/profile.jpg");
         assertThat(profile.gender()).isEqualTo(User.Gender.FEMALE);
         assertThat(profile.birthDate()).isEqualTo(LocalDate.of(1995, 2, 14));
     }
@@ -64,6 +65,7 @@ class SocialProviderClientTest {
                     "birthyear": "1990",
                     "birthday": "01-02",
                     "nickname": "Naver Nickname",
+                    "profile_image": "https://naver.example/profile.jpg",
                     "name": "Naver User"
                   }
                 }
@@ -76,6 +78,7 @@ class SocialProviderClientTest {
         assertThat(profile.phone()).isEqualTo("010-1234-5678");
         assertThat(profile.name()).isEqualTo("Naver User");
         assertThat(profile.nickname()).isEqualTo("Naver Nickname");
+        assertThat(profile.profileImageUrl()).isEqualTo("https://naver.example/profile.jpg");
         assertThat(profile.gender()).isEqualTo(User.Gender.MALE);
         assertThat(profile.birthDate()).isEqualTo(LocalDate.of(1990, 1, 2));
     }

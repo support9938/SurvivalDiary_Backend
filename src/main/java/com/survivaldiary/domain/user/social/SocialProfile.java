@@ -8,6 +8,7 @@ public record SocialProfile(
         String email,
         String name,
         String nickname,
+        String profileImageUrl,
         String phone,
         User.Gender gender,
         Integer birthYear,
@@ -15,6 +16,6 @@ public record SocialProfile(
 ) {
 
     public SocialProfile(String providerUserId, String email, String name) {
-        this(providerUserId, email, name, name, null, null, null, null);
+        this(providerUserId, email, name, name, null, null, null, null, null);
     }
 }
