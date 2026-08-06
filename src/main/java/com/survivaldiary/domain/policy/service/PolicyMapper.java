@@ -49,8 +49,17 @@ public class PolicyMapper {
     private static final Pattern AMOUNT_QUALIFIER_PATTERN = Pattern.compile(
             "(?:^|\\s|/)(?:매월|월)(?=\\s|최대|$)|최대"
     );
+    private static final Pattern NON_BENEFIT_AMOUNT_CONTEXT_PATTERN = Pattern.compile(
+            "(?s).*(?:예산|시급|일급|월급|연봉|임금|보수|소득|납입|매출|자산|재산)"
+                    + "\\s*(?:최대\\s*)?$"
+    );
+    private static final Pattern MAXIMUM_AMOUNT_SUFFIX_PATTERN = Pattern.compile(
+            "(?s)^\\s*(?:이내|까지|한도|범위)(?:\\s|[,.()]|$).*"
+    );
     private static final Pattern LOGIN_LINK_PATTERN = Pattern.compile(
-            "(^|[/?&._=-])(login|signin|sign-in|auth|oauth|sso)([/?&._=-]|$)",
+            "(^|[/?&._=-])"
+                    + "(login|signin|sign-in|signup|sign-up|register|registration|join|joinagree|auth|oauth|sso)"
+                    + "([/?&._=-]|$)",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern HOME_PATH_PATTERN = Pattern.compile(
@@ -192,7 +201,8 @@ public class PolicyMapper {
                     Math.min(rawSupportText.length(), matchEnd + 12)
             );
             if (UNSUPPORTED_AMOUNT_CADENCE_PREFIX_PATTERN.matcher(prefix).matches()
-                    || UNSUPPORTED_AMOUNT_CADENCE_SUFFIX_PATTERN.matcher(suffix).matches()) {
+                    || UNSUPPORTED_AMOUNT_CADENCE_SUFFIX_PATTERN.matcher(suffix).matches()
+                    || NON_BENEFIT_AMOUNT_CONTEXT_PATTERN.matcher(prefix).matches()) {
                 return PolicySupportAmount.unknown();
             }
 
@@ -207,7 +217,8 @@ public class PolicyMapper {
                     || prefix.matches("(?s).*최대\\s*(?:매월|월)\\s*$")
                     || suffix.matches("(?s)^\\s*(?:/\\s*)?(?:매월|월)(?:\\s|$).*");
             boolean maximum = prefix.matches("(?s).*최대\\s*(?:(?:매월|월)\\s*)?$")
-                    || prefix.matches("(?s).*(?:매월|월)\\s*최대\\s*$");
+                    || prefix.matches("(?s).*(?:매월|월)\\s*최대\\s*$")
+                    || MAXIMUM_AMOUNT_SUFFIX_PATTERN.matcher(suffix).matches();
             boolean hasUnclassifiedQualifier = (AMOUNT_QUALIFIER_PATTERN.matcher(prefix).find()
                     || AMOUNT_QUALIFIER_PATTERN.matcher(suffix).find())
                     && !monthly
