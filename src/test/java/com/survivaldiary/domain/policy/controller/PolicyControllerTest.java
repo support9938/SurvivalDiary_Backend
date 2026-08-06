@@ -2,7 +2,10 @@ package com.survivaldiary.domain.policy.controller;
 
 import com.survivaldiary.domain.policy.dto.PolicyCategory;
 import com.survivaldiary.domain.policy.dto.PolicyDetail;
+import com.survivaldiary.domain.policy.dto.PolicyApplicationPeriodType;
+import com.survivaldiary.domain.policy.dto.PolicyOfficialLinkType;
 import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
+import com.survivaldiary.domain.policy.dto.PolicySupportAmountType;
 import com.survivaldiary.domain.policy.service.PolicyRecommendationService;
 import com.survivaldiary.domain.policy.service.PolicyService;
 import com.survivaldiary.global.exception.GlobalExceptionHandler;
@@ -132,16 +135,20 @@ class PolicyControllerTest {
                         PolicyCategory.HOUSING,
                         "청년 주거 정책",
                         "정책 설명",
-                        null,
-                        "지원 내용",
+                        200_000L,
+                        PolicySupportAmountType.MONTHLY_MAXIMUM,
+                        "월 최대 20만 원 지원",
                         "20260701~20260731",
+                        PolicyApplicationPeriodType.FIXED,
+                        java.time.LocalDate.of(2026, 7, 1),
                         java.time.LocalDate.of(2026, 7, 31),
                         "지원 대상",
                         "주관 기관",
                         "운영 기관",
                         "온라인 신청",
                         List.of(),
-                        null,
+                        "https://example.org/apply",
+                        PolicyOfficialLinkType.APPLICATION_CANDIDATE,
                         List.of()
                 )
         );
@@ -150,7 +157,11 @@ class PolicyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.data.policyId").value("POLICY-A"))
+                .andExpect(jsonPath("$.data.supportAmount").value(200000))
+                .andExpect(jsonPath("$.data.supportAmountType").value("MONTHLY_MAXIMUM"))
+                .andExpect(jsonPath("$.data.applicationPeriodType").value("FIXED"))
+                .andExpect(jsonPath("$.data.applicationStartDate").value("2026-07-01"))
                 .andExpect(jsonPath("$.data.applicationEndDate").value("2026-07-31"))
-                .andExpect(jsonPath("$.data.supportAmount").doesNotExist());
+                .andExpect(jsonPath("$.data.officialLinkType").value("APPLICATION_CANDIDATE"));
     }
 }

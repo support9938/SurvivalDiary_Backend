@@ -316,15 +316,21 @@ frstRegDt
 `plcySprtCn`은 설명 문자열이고 `sprtSclCnt`는 지원 규모 수이므로 금액으로 사용하지 않는다.
 
 - `supportText`: `plcySprtCn`
-- `supportAmount`: 1차 구현에서는 `null`
+- `supportAmount`: 원문에서 하나의 현금성 금액만 명확하게 확인되는 경우의 금액
+- `supportAmountType`: `FIXED`, `MAXIMUM`, `MONTHLY`, `MONTHLY_MAXIMUM`
 
-금액 구조가 공식적으로 확인되기 전에는 문자열에서 숫자를 추출해 예상 총액을 만들지 않는다.
+범위 금액, 둘 이상의 금액, 대출·융자·보증금·이자·수수료·자부담 문구는 구조화하지 않는다.
+현재 유형으로 표현할 수 없는 연·분기·주·일 단위 금액도 구조화하지 않고 원문만 보존한다.
+구조화하지 못한 경우 두 필드는 `null`로 두고 `supportText` 원문을 보존한다.
+월 금액을 총액으로 환산하거나 평균·예상 금액을 만들지 않는다.
 
 ### 마감일
 
 공식 응답에는 구조화된 신청 종료일 필드가 없고 `aplyYmd` 신청 기간 문자열과 `aplyPrdSeCd`만 있다.
 
 - `applicationPeriodText`: `aplyYmd`
+- `applicationPeriodType`: `FIXED`, `ALWAYS`, `CLOSED`, `UNTIL_BUDGET`, `UNKNOWN`
+- `applicationStartDate`: 정확한 날짜 범위인 경우의 시작일
 - `applicationEndDate`: 안전하게 날짜 범위를 파싱한 경우만 설정
 - 상시 접수: 종료일 `null`
 - 마감 또는 해석 불가: 원문을 보존하고 종료일 `null`
@@ -333,6 +339,10 @@ frstRegDt
 
 `aplyUrlAddr`는 신청 URL이고 `refUrlAddr1`, `refUrlAddr2`는 참고 URL이다.
 온통청년 상세 페이지 URL 생성 규칙은 공개 API 문서에서 확인되지 않았으므로 정책 번호로 임의 생성하지 않는다.
+유효한 `http` 또는 `https` 주소만 보존하며 사용자 정보가 포함된 URL은 제외한다.
+공식 URL은 주소만으로 `APPLICATION_CANDIDATE`, `LOGIN_REQUIRED`, `INSTITUTION_HOME`,
+`UNKNOWN`, `UNAVAILABLE` 중 하나로 분류한다. 이 값은 화면 안내용 품질 표시이며 실제 신청 가능 여부를
+보장하지 않는다.
 
 ## 9. 페이징과 필터 전략
 
@@ -496,9 +506,13 @@ Content-Type: application/json
         "categoryType": "HOUSING",
         "title": "청년 주거 지원",
         "summary": "정책 설명",
-        "supportAmount": null,
+        "supportAmount": 500000,
+        "supportAmountType": "MONTHLY_MAXIMUM",
         "supportText": "지원 내용",
         "applicationPeriodText": "20260701~20260731",
+        "applicationPeriodType": "FIXED",
+        "applicationStartDate": "2026-07-01",
+        "applicationEndDate": "2026-07-31",
         "target": "만 19~34세",
         "agency": "주관 기관",
         "eligibilityStatus": "CHECK_REQUIRED",
@@ -536,8 +550,8 @@ URL은 `http` 또는 `https` 형식이 유효한 경우만 반환한다.
 - 구조화 필드로 명확하게 불일치하면 목록에서 제외한다.
 - 소득 등 정확하게 변환할 수 없는 조건은 제외하지 않고 `CHECK_REQUIRED`로 포함한다.
 - `CHECK_REQUIRED` 정책은 `eligibilityReasons`로 사용자가 확인할 항목을 안내한다.
-- 구조화된 지원금 필드가 없으므로 `supportAmount`는 `null`이다.
-- 신청 기간은 안전한 종료일 파싱 전까지 `applicationPeriodText` 원문으로 반환한다.
+- 하나의 현금성 금액만 명확한 경우에만 금액과 금액 유형을 구조화하고, 그 밖에는 원문만 반환한다.
+- 신청 기간은 안전한 날짜 범위일 때만 시작일과 종료일을 구조화하고 원문은 항상 반환한다.
 
 ### 13.5 실제 제공처 계약 테스트
 
@@ -863,8 +877,8 @@ JWT 사용자 ID
 - 홈은 별도 API를 추가하지 않고 기존 `POST /api/policies/recommendations`를 최대 20건으로 호출한다.
 - 앱은 백엔드 추천 순서의 첫 추천을 우선하고, `applicationEndDate`가 30일 이내인 정책을 보완해
   최대 3건을 표시한다.
-- `supportAmount`는 공식 구조화 금액 필드가 없으므로 계속 null을 유지한다. 홈과 목록은
-  `supportText`의 실제 제공처 문구를 사용하며 평균 금액을 만들지 않는다.
+- 이 단계에서는 `supportAmount`를 null로 유지하고 홈과 목록이 `supportText` 원문을 사용했다.
+  이후 20단계에서 보수적 금액 정제 기준을 확정했으며, 평균 금액은 여전히 만들지 않는다.
 
 ### 19.4 완료 상태
 
@@ -875,5 +889,65 @@ JWT 사용자 ID
 - [ ] 실제 제공처 응답의 기간 형식 분포 수동 확인
 
 날짜 형식 분포를 확인한 뒤 허용 형식을 늘릴 때도 전체 문자열이 명확한 기간 범위인지 먼저 검증한다.
-지원 금액은 제공처가 구조화 필드를 제공하거나 팀이 별도 데이터 정제 정책을 확정하기 전까지
-설명 문자열에서 추출하지 않는다.
+지원 금액은 다음 단계에서 확정한 보수적 정제 기준에 해당할 때만 구조화한다.
+
+## 20. 정책 데이터 품질 — 근거가 분명한 값만 구조화
+
+### 20.1 목적과 원칙
+
+목록과 상세에서 지원 금액, 신청 기간, 공식 링크의 성격을 더 직관적으로 보여 주되 제공처 원문을
+추측으로 바꾸지 않는다. 별도 DB나 운영자 입력값은 추가하지 않으며 기존 원문 필드는 항상 보존한다.
+새 필드는 모두 기존 앱이 무시할 수 있는 응답 확장이므로 하위 호환을 유지한다.
+
+### 20.2 응답 확장
+
+```json
+{
+  "supportAmount": 200000,
+  "supportAmountType": "MONTHLY_MAXIMUM",
+  "supportText": "매월 최대 20만원 지원",
+  "applicationPeriodText": "2026.08.01~2026.08.31",
+  "applicationPeriodType": "FIXED",
+  "applicationStartDate": "2026-08-01",
+  "applicationEndDate": "2026-08-31",
+  "officialUrl": "https://example.org/apply/123",
+  "officialLinkType": "APPLICATION_CANDIDATE"
+}
+```
+
+- 금액 유형: `FIXED`, `MAXIMUM`, `MONTHLY`, `MONTHLY_MAXIMUM`
+- 기간 유형: `FIXED`, `ALWAYS`, `CLOSED`, `UNTIL_BUDGET`, `UNKNOWN`
+- 공식 링크 유형: `APPLICATION_CANDIDATE`, `LOGIN_REQUIRED`, `INSTITUTION_HOME`, `UNKNOWN`, `UNAVAILABLE`
+- 금액을 확정할 수 없으면 `supportAmount`와 `supportAmountType`은 `null`이다.
+- 기간을 날짜로 확정할 수 없어도 기간 유형과 원문은 가능한 범위에서 유지한다.
+- 공식 URL이 없거나 유효하지 않으면 `officialLinkType`은 `UNAVAILABLE`이다.
+
+### 20.3 보수적 변환 기준
+
+- 원문 전체에서 하나의 원 단위 현금성 금액만 발견될 때만 구조화한다.
+- 범위 금액, 여러 금액, 대출·융자·보증금·이자·수수료·자부담·납부 문구는 제외한다.
+- `월`, `매월`, `최대`가 금액 바로 앞 문맥에 있을 때만 금액 유형에 반영한다.
+- 연·분기·주·일 단위처럼 현재 유형으로 정확히 표현할 수 없는 금액은 원문만 보존한다.
+- 월 금액을 지원 개월 수와 곱하지 않고, 평균값이나 예상 총액을 생성하지 않는다.
+- 특정 기간 코드는 전체 원문이 정확한 두 날짜 범위일 때만 시작일과 종료일을 만든다.
+- 링크 유형은 URL 문자열만으로 안내 수준을 분류하며 실제 페이지 접속·로그인·신청 성공은 보장하지 않는다.
+
+### 20.4 데이터 흐름
+
+```text
+온통청년 원문 응답
+  → 원문 필드 보존
+  → 보수적 금액·기간·URL 검증
+  → 확실한 값만 선택 필드로 구조화
+  → 앱이 유형별 라벨과 안내 문구 표시
+```
+
+### 20.5 완료 상태
+
+- [x] 목록·상세 응답의 금액 유형과 기간 유형 계약 추가
+- [x] 상세 응답의 공식 링크 유형 계약 추가
+- [x] 불명확한 금액을 제외하는 변환 규칙과 단위 테스트 추가
+- [x] 정확한 기간 범위·상시·마감·예산 소진 유형 변환 추가
+- [x] 유효 URL과 링크 성격 분류 및 단위 테스트 추가
+- [ ] 현재 `main`의 정책 외 컴파일 오류 해결 후 전체 백엔드 테스트 재실행
+- [ ] 실제 제공처 데이터에서 금액·기간·링크 분류 정확도 수동 확인
