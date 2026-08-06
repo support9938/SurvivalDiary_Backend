@@ -12,6 +12,7 @@ public record PolicySummary(
         @Schema(description = "앱 정책 카테고리") PolicyCategory categoryType,
         @Schema(description = "정책명") String title,
         @Schema(description = "정책 요약") String summary,
+        @Schema(description = "목록 표시용 기호 없는 한 줄 요약") String shortSummary,
         @Schema(description = "구조화된 지원금. 확인 불가 시 null") Long supportAmount,
         @Schema(description = "지원 금액 유형. 확인 불가 시 null") PolicySupportAmountType supportAmountType,
         @Schema(description = "지원 내용 원문") String supportText,
