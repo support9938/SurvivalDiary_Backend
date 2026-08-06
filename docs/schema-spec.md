@@ -34,6 +34,7 @@ erDiagram
     users ||--o{ categories : "사용자 정의"
     users ||--o{ notifications : ""
     users ||--o{ policy_interests : ""
+    users ||--o{ user_hidden_policies : "관심 없음 정책"
     users ||--o{ posts : ""
     users ||--o{ comments : ""
     users ||--o{ post_likes : ""
@@ -203,6 +204,21 @@ erDiagram
 | policy_id | BIGINT UNSIGNED | N | FK(policies), CASCADE | | |
 | status | VARCHAR(20) | N | | `INTERESTED` | `INTERESTED`(관심) / `PLANNED`(신청예정) / `APPLIED`(신청완료) |
 | created_at | DATETIME | N | | NOW | 저장일 |
+
+### user_hidden_policies — 사용자별 관심 없음 정책
+
+온통청년의 문자열 정책 번호와 목록 표시용 스냅샷을 저장한다. 내부 `policies` 테이블의 숫자 PK를
+사용하는 `policy_interests`와 목적과 식별자 형식이 다르므로 별도 테이블로 관리한다.
+
+| 컬럼 | 타입 | Null | 키/제약 | 기본값 | 설명 |
+|---|---|---|---|---|---|
+| hidden_policy_id | BIGINT UNSIGNED | N | PK, AI | | |
+| user_id | BIGINT UNSIGNED | N | FK(users), UNIQUE(user_id, policy_id), CASCADE | | 로그인 사용자 |
+| policy_id | VARCHAR(100) | N | UNIQUE(user_id, policy_id) | | 온통청년 정책 번호 |
+| title | VARCHAR(200) | N | | | 숨길 당시 정책명 |
+| category | VARCHAR(100) | Y | | | 숨길 당시 정책 분야 |
+| short_summary | VARCHAR(500) | Y | | | 숨길 당시 목록 요약 |
+| hidden_at | DATETIME | N | IDX(user_id, hidden_at) | NOW | 관심 없음 설정 시각 |
 
 ---
 

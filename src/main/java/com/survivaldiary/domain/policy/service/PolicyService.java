@@ -54,22 +54,31 @@ public class PolicyService {
     }
 
     public PolicySearchResponse search(PolicySearchRequest request) {
-        return search(request, 1, false);
+        return search(request, 1, false, Set.of());
     }
 
     public PolicySearchResponse recommend(PolicySearchRequest request) {
+        return recommend(request, Set.of());
+    }
+
+    public PolicySearchResponse recommend(
+            PolicySearchRequest request,
+            Set<String> excludedPolicyIds
+    ) {
         boolean defaultDiscovery = request.category() == null && request.keyword() == null;
         return search(
                 request,
                 defaultDiscovery ? RECOMMENDATION_PROVIDER_PAGE_COUNT : 1,
-                defaultDiscovery
+                defaultDiscovery,
+                excludedPolicyIds == null ? Set.of() : Set.copyOf(excludedPolicyIds)
         );
     }
 
     private PolicySearchResponse search(
             PolicySearchRequest request,
             int providerPageCount,
-            boolean diversifyRecommendations
+            boolean diversifyRecommendations,
+            Set<String> excludedPolicyIds
     ) {
         validateRegionRelation(request);
 
@@ -110,6 +119,9 @@ public class PolicyService {
         Map<String, RankedPolicy> matchedItems = new LinkedHashMap<>();
 
         for (YouthPolicyItem item : candidates.values()) {
+            if (excludedPolicyIds.contains(item.plcyNo())) {
+                continue;
+            }
             PolicyMatchResult matchResult = policyMatcher.match(item, request);
             if (matchResult.included()) {
                 PolicyRecommendationResult recommendationResult = recommendationEvaluator.evaluate(

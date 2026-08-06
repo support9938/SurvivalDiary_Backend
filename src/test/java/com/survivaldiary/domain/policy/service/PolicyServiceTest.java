@@ -106,6 +106,22 @@ class PolicyServiceTest {
     }
 
     @Test
+    void 관심_없음_정책은_조건_판정과_정렬_전에_제외한다() {
+        JsonNode root = mock(JsonNode.class);
+        YouthPolicyItem hidden = item("HIDDEN-1");
+        when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);
+        when(parser.parseItems(root)).thenReturn(List.of(hidden));
+
+        PolicySearchResponse response = service.recommend(
+                defaultRequest(),
+                Set.of("HIDDEN-1")
+        );
+
+        assertThat(response.items()).isEmpty();
+        verify(matcher, never()).match(eq(hidden), any(PolicySearchRequest.class));
+    }
+
+    @Test
     void 요청한_페이지와_정책명_검색어를_제공처에_전달한다() {
         JsonNode root = mock(JsonNode.class);
         when(client.search(any(YouthPolicySearchRequest.class))).thenReturn(root);

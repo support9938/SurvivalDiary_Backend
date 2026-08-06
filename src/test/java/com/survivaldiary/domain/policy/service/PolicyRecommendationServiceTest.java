@@ -15,6 +15,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,20 +24,27 @@ class PolicyRecommendationServiceTest {
 
     private PolicyPreferenceService preferenceService;
     private PolicyService policyService;
+    private HiddenPolicyService hiddenPolicyService;
     private PolicyRecommendationService service;
 
     @BeforeEach
     void setUp() {
         preferenceService = mock(PolicyPreferenceService.class);
         policyService = mock(PolicyService.class);
-        service = new PolicyRecommendationService(preferenceService, policyService);
+        hiddenPolicyService = mock(HiddenPolicyService.class);
+        service = new PolicyRecommendationService(
+                preferenceService,
+                policyService,
+                hiddenPolicyService
+        );
     }
 
     @Test
     void 저장된_조건과_탐색_조건을_합쳐_추천한다() {
         when(preferenceService.get(7L)).thenReturn(preference());
+        when(hiddenPolicyService.hiddenPolicyIds(7L)).thenReturn(Set.of("HIDDEN-1"));
         PolicySearchResponse response = new PolicySearchResponse(List.of(), false, 1, null);
-        when(policyService.recommend(any())).thenReturn(response);
+        when(policyService.recommend(any(), eq(Set.of("HIDDEN-1")))).thenReturn(response);
 
         PolicySearchResponse result = service.recommend(
                 7L,
@@ -52,7 +60,7 @@ class PolicyRecommendationServiceTest {
                         && "월세".equals(request.keyword())
                         && request.requestedPage() == 2
                         && Boolean.TRUE.equals(request.jobSeeking())
-        ));
+        ), eq(Set.of("HIDDEN-1")));
     }
 
     @Test

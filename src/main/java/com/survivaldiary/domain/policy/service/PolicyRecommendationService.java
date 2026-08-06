@@ -6,6 +6,7 @@ import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ public class PolicyRecommendationService {
 
     private final PolicyPreferenceService policyPreferenceService;
     private final PolicyService policyService;
+    private final HiddenPolicyService hiddenPolicyService;
 
     public PolicySearchResponse recommend(
             Long userId,
@@ -27,7 +29,7 @@ public class PolicyRecommendationService {
             throw new BusinessException(ErrorCode.POLICY_PREFERENCE_REQUIRED);
         }
 
-        return policyService.recommend(new PolicySearchRequest(
+        PolicySearchRequest searchRequest = new PolicySearchRequest(
                 preference.age(),
                 preference.regionCode(),
                 preference.districtCode(),
@@ -41,6 +43,8 @@ public class PolicyRecommendationService {
                 preference.jobSeeking(),
                 preference.educationStatus(),
                 preference.interests()
-        ));
+        );
+        Set<String> hiddenPolicyIds = hiddenPolicyService.hiddenPolicyIds(userId);
+        return policyService.recommend(searchRequest, hiddenPolicyIds);
     }
 }
