@@ -36,7 +36,7 @@ class PolicyRecommendationServiceTest {
     void 저장된_조건과_탐색_조건을_합쳐_추천한다() {
         when(preferenceService.get(7L)).thenReturn(preference());
         PolicySearchResponse response = new PolicySearchResponse(List.of(), false, 1, null);
-        when(policyService.search(any())).thenReturn(response);
+        when(policyService.recommend(any())).thenReturn(response);
 
         PolicySearchResponse result = service.recommend(
                 7L,
@@ -44,7 +44,7 @@ class PolicyRecommendationServiceTest {
         );
 
         assertThat(result).isSameAs(response);
-        verify(policyService).search(org.mockito.ArgumentMatchers.argThat(
+        verify(policyService).recommend(org.mockito.ArgumentMatchers.argThat(
                 (PolicySearchRequest request) -> request.age() == 29
                         && "26".equals(request.regionCode())
                         && request.districtCode() == null

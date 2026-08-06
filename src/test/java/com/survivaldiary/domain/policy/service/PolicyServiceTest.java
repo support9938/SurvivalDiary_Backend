@@ -10,6 +10,7 @@ import com.survivaldiary.domain.policy.dto.PolicyDetail;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
 import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
+import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
 import com.survivaldiary.domain.policy.dto.PolicySummary;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -197,6 +199,72 @@ class PolicyServiceTest {
     }
 
     @Test
+    void 기본_추천은_세_페이지_후보를_비교해_뒤쪽의_맞춤_정책을_먼저_반환한다() {
+        JsonNode firstRoot = mock(JsonNode.class);
+        JsonNode secondRoot = mock(JsonNode.class);
+        JsonNode thirdRoot = mock(JsonNode.class);
+        YouthPolicyItem discoverItem = item("POLICY-DISCOVER");
+        YouthPolicyItem recommendedItem = item("POLICY-RECOMMENDED");
+        List<YouthPolicyItem> firstPage = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(index -> index == 0 ? discoverItem : item("FIRST-" + index))
+                .toList();
+        List<YouthPolicyItem> secondPage = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(index -> item("SECOND-" + index))
+                .toList();
+        PolicyMatchResult matchResult = PolicyMatchResult.matched();
+        PolicySummary discoverSummary = summary("POLICY-DISCOVER");
+        PolicySummary recommendedSummary = summary("POLICY-RECOMMENDED");
+
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 1)))
+                .thenReturn(firstRoot);
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 2)))
+                .thenReturn(secondRoot);
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 3)))
+                .thenReturn(thirdRoot);
+        when(parser.parseItems(firstRoot)).thenReturn(firstPage);
+        when(parser.parseItems(secondRoot)).thenReturn(secondPage);
+        when(parser.parseItems(thirdRoot)).thenReturn(List.of(recommendedItem));
+        when(matcher.match(any(YouthPolicyItem.class), any(PolicySearchRequest.class)))
+                .thenReturn(PolicyMatchResult.excluded());
+        when(matcher.match(eq(discoverItem), any(PolicySearchRequest.class)))
+                .thenReturn(matchResult);
+        when(matcher.match(eq(recommendedItem), any(PolicySearchRequest.class)))
+                .thenReturn(matchResult);
+        when(recommendationEvaluator.evaluate(
+                eq(discoverItem),
+                any(PolicySearchRequest.class),
+                eq(matchResult)
+        )).thenReturn(new PolicyRecommendationResult(
+                PolicyRecommendationStatus.DISCOVER,
+                List.of("함께 보기"),
+                100
+        ));
+        when(recommendationEvaluator.evaluate(
+                eq(recommendedItem),
+                any(PolicySearchRequest.class),
+                eq(matchResult)
+        )).thenReturn(recommended(1_100));
+        when(mapper.toSummary(
+                eq(discoverItem),
+                eq(matchResult),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(discoverSummary);
+        when(mapper.toSummary(
+                eq(recommendedItem),
+                eq(matchResult),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(recommendedSummary);
+
+        PolicySearchResponse response = service.recommend(defaultRequest());
+
+        assertThat(response.items()).containsExactly(recommendedSummary, discoverSummary);
+        assertThat(response.checkedProviderPages()).isEqualTo(3);
+        assertThat(response.partialResult()).isFalse();
+        assertThat(response.nextPage()).isNull();
+        verify(client, times(3)).search(any(YouthPolicySearchRequest.class));
+    }
+
+    @Test
     void 상세_응답을_파싱해_내부_DTO로_변환한다() {
         JsonNode root = mock(JsonNode.class);
         YouthPolicyItem item = item("POLICY-DETAIL");
@@ -255,7 +323,26 @@ class PolicyServiceTest {
                 PolicyEligibilityStatus.MATCHED,
                 List.of(),
                 PolicyRecommendationStatus.RECOMMENDED,
-                List.of("관심 주제인 주거 분야와 관련된 정책이에요.")
+                List.of("관심 주제인 주거 분야와 관련된 정책이에요."),
+                List.of()
+        );
+    }
+
+    private PolicySearchRequest defaultRequest() {
+        return new PolicySearchRequest(
+                27,
+                "11",
+                "11680",
+                null,
+                null,
+                null,
+                null,
+                1,
+                20,
+                "UNEMPLOYED",
+                true,
+                null,
+                Set.of("EMPLOYMENT", "HOUSING")
         );
     }
 

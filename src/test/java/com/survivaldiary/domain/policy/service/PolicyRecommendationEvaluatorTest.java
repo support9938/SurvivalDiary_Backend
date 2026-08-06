@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.policy.service;
 
 import com.survivaldiary.domain.policy.client.dto.YouthPolicyItem;
+import com.survivaldiary.domain.policy.dto.PolicyMatchSignal;
 import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,8 @@ class PolicyRecommendationEvaluatorTest {
         assertThat(result.reasons())
                 .contains("관심 주제인 주거 분야와 관련된 정책이에요.")
                 .contains("선택한 시·군·구 거주 조건과 일치해요.");
+        assertThat(result.matchSignals())
+                .contains(PolicyMatchSignal.INTEREST_HOUSING, PolicyMatchSignal.DISTRICT);
     }
 
     @Test
@@ -43,15 +46,21 @@ class PolicyRecommendationEvaluatorTest {
     }
 
     @Test
-    void 확인할_자격_조건이_있으면_관심_분야여도_확인_필요가_우선한다() {
+    void 확인할_자격_조건이_있어도_관련성이_높으면_추천_근거를_유지한다() {
         PolicyRecommendationResult result = evaluator.evaluate(
                 item("교육", "청년 교육 지원", "대학생,교육", "11680"),
                 request(Set.of("EDUCATION"), null, "STUDENT"),
                 PolicyMatchResult.checkRequired(List.of("재학 조건을 확인해야 합니다."))
         );
 
-        assertThat(result.status()).isEqualTo(PolicyRecommendationStatus.CHECK_REQUIRED);
-        assertThat(result.reasons().get(0)).isEqualTo("재학 조건을 확인해야 합니다.");
+        assertThat(result.status()).isEqualTo(PolicyRecommendationStatus.RECOMMENDED);
+        assertThat(result.reasons())
+                .contains("관심 주제인 교육 분야와 관련된 정책이에요.");
+        assertThat(result.matchSignals())
+                .contains(
+                        PolicyMatchSignal.EDUCATION_STATUS,
+                        PolicyMatchSignal.INTEREST_EDUCATION
+                );
     }
 
     @Test
@@ -76,13 +85,42 @@ class PolicyRecommendationEvaluatorTest {
 
         assertThat(result.status()).isEqualTo(PolicyRecommendationStatus.RECOMMENDED);
         assertThat(result.reasons())
-                .contains("구직 중인 사용자에게 관련된 일자리 정책이에요.");
+                .contains("현재 구직 상황에 직접 관련된 정책이에요.");
+        assertThat(result.matchSignals()).contains(PolicyMatchSignal.JOB_SEEKING);
+    }
+
+    @Test
+    void 근로_대상_코드가_일치하는_정책은_같은_지역의_일반_정책보다_우선한다() {
+        PolicyRecommendationResult employed = evaluator.evaluate(
+                item("일자리", "재직 청년 직무 교육", "재직자,직무", "11680", "0013001"),
+                request(Set.of(), false, null, "EMPLOYED"),
+                PolicyMatchResult.matched()
+        );
+        PolicyRecommendationResult unemployed = evaluator.evaluate(
+                item("일자리", "재직 청년 직무 교육", "재직자,직무", "11680", "0013001"),
+                request(Set.of(), true, null, "UNEMPLOYED"),
+                PolicyMatchResult.matched()
+        );
+
+        assertThat(employed.status()).isEqualTo(PolicyRecommendationStatus.RECOMMENDED);
+        assertThat(employed.matchSignals()).contains(PolicyMatchSignal.WORK_STATUS);
+        assertThat(employed.priority()).isGreaterThan(unemployed.priority());
+        assertThat(unemployed.matchSignals()).doesNotContain(PolicyMatchSignal.WORK_STATUS);
     }
 
     private PolicySearchRequest request(
             Set<String> interests,
             Boolean jobSeeking,
             String educationStatus
+    ) {
+        return request(interests, jobSeeking, educationStatus, "UNEMPLOYED");
+    }
+
+    private PolicySearchRequest request(
+            Set<String> interests,
+            Boolean jobSeeking,
+            String educationStatus,
+            String workStatus
     ) {
         return new PolicySearchRequest(
                 27,
@@ -94,7 +132,7 @@ class PolicyRecommendationEvaluatorTest {
                 null,
                 1,
                 20,
-                "UNEMPLOYED",
+                workStatus,
                 jobSeeking,
                 educationStatus,
                 interests
@@ -106,6 +144,16 @@ class PolicyRecommendationEvaluatorTest {
             String title,
             String keywords,
             String zipCode
+    ) {
+        return item(largeCategory, title, keywords, zipCode, "0013010");
+    }
+
+    private YouthPolicyItem item(
+            String largeCategory,
+            String title,
+            String keywords,
+            String zipCode,
+            String jobCode
     ) {
         return new YouthPolicyItem(
                 "POLICY-1",
@@ -119,7 +167,7 @@ class PolicyRecommendationEvaluatorTest {
                 "19",
                 "34",
                 "Y",
-                "0013010",
+                jobCode,
                 null,
                 "0043001",
                 null,

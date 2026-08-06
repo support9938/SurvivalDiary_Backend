@@ -14,7 +14,6 @@ import java.util.Set;
 @Component
 public class PolicyMatcher {
 
-    private static final String JOB_UNLIMITED = "0013010";
     private static final String INCOME_UNLIMITED = "0043001";
 
     public PolicyMatchResult match(YouthPolicyItem item, PolicySearchRequest request) {
@@ -26,7 +25,9 @@ public class PolicyMatcher {
         if (!matchesRegion(item.zipCd(), request, checkReasons)) {
             return PolicyMatchResult.excluded();
         }
-        addEmploymentCheck(item, request.requestedWorkStatus(), checkReasons);
+        if (!matchesEmployment(item, request.requestedWorkStatus(), checkReasons)) {
+            return PolicyMatchResult.excluded();
+        }
         addEducationCheck(item, request.requestedEducationStatus(), checkReasons);
         if (!matchesIncome(item, request.incomeRange(), checkReasons)) {
             return PolicyMatchResult.excluded();
@@ -82,40 +83,19 @@ public class PolicyMatcher {
         return codes.contains(request.regionCode() + "000");
     }
 
-    private void addEmploymentCheck(
+    private boolean matchesEmployment(
             YouthPolicyItem item,
             String workStatus,
             List<String> checkReasons
     ) {
-        if (workStatus == null) {
-            return;
-        }
-
-        Set<String> jobCodes = tokens(item.jobCd());
-        if (jobCodes.contains(JOB_UNLIMITED)) {
-            return;
-        }
-
-        String expectedCode = switch (workStatus) {
-            case "EMPLOYED" -> "0013001";
-            case "SELF_EMPLOYED" -> "0013002";
-            case "UNEMPLOYED" -> "0013003";
-            case "FREELANCER" -> "0013004";
-            case "DAILY_WORKER" -> "0013005";
-            case "PROSPECTIVE_FOUNDER" -> "0013006";
-            case "SHORT_TERM_WORKER" -> "0013007";
-            case "FARMER" -> "0013008";
-            case "OTHER" -> "0013009";
-            default -> null;
+        return switch (PolicyTargetClassifier.classifyJob(item.jobCd(), workStatus)) {
+            case NOT_REQUESTED, UNRESTRICTED, MATCHED -> true;
+            case MISMATCHED -> false;
+            case UNKNOWN -> {
+                checkReasons.add("근로 상태 조건을 공고문에서 확인해야 합니다.");
+                yield true;
+            }
         };
-
-        if (expectedCode == null || jobCodes.isEmpty()) {
-            checkReasons.add("근로 상태 조건을 공고문에서 확인해야 합니다.");
-            return;
-        }
-        if (!jobCodes.contains(expectedCode)) {
-            checkReasons.add("현재 근로 상태로 신청할 수 있는지 확인해야 합니다.");
-        }
     }
 
     private void addEducationCheck(

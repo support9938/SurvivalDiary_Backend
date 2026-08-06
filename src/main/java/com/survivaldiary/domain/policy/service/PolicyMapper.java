@@ -100,7 +100,8 @@ public class PolicyMapper {
                 matchResult.status(),
                 matchResult.reasons(),
                 recommendationResult.status(),
-                recommendationResult.reasons()
+                recommendationResult.reasons(),
+                recommendationResult.matchSignals()
         );
     }
 
