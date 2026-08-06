@@ -93,11 +93,6 @@ public class AuthService {
         User user = socialAccountRepository
                 .findByProviderAndProviderUserId(provider, profile.providerUserId())
                 .map(account -> userRepository.findById(account.getUserId())
-                        .map(existingUser -> {
-                            existingUser.applySocialProfile(profile.email(), profile.name(), profile.nickname(), profile.profileImageUrl(), profile.phone(),
-                                    profile.gender(), profile.birthYear(), profile.birthDate());
-                            return existingUser;
-                        })
                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)))
                 .orElseGet(() -> createSocialUser(provider, profile));
         return issueTokens(user);

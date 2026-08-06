@@ -3,8 +3,6 @@ package com.survivaldiary.domain.user.service;
 import com.survivaldiary.domain.user.dto.UpdateUserRequest;
 import com.survivaldiary.domain.user.dto.UserResponse;
 import com.survivaldiary.domain.user.entity.User;
-import com.survivaldiary.domain.user.entity.UserProfile;
-import com.survivaldiary.domain.user.repository.UserProfileRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
@@ -18,13 +16,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
     private final ProfileImageStorage profileImageStorage;
 
     @Transactional(readOnly = true)
     public UserResponse getMe(Long userId) {
         User user = findUser(userId);
-        return response(user);
+        return UserResponse.from(user);
     }
 
     @Transactional
@@ -35,52 +32,37 @@ public class UserService {
                 normalize(request.phone()),
                 request.birthDate(),
                 request.gender(),
-                normalize(request.region())
+                normalize(request.region()),
+                normalize(request.bio())
         );
-
-        UserProfile profile = getOrCreateProfile(userId);
-        profile.updateBio(normalize(request.bio()));
-        return UserResponse.from(user, profile);
+        return UserResponse.from(user);
     }
 
     @Transactional
     public UserResponse updateProfileImage(Long userId, MultipartFile image) {
         User user = findUser(userId);
-        UserProfile profile = getOrCreateProfile(userId);
-        String previousImageUrl = profile.getProfileImageUrl();
+        String previousImageUrl = user.getProfileImageUrl();
         String imageUrl = profileImageStorage.store(image);
-        profile.updateProfileImageUrl(imageUrl);
-        userProfileRepository.save(profile);
+        user.updateProfileImageUrl(imageUrl);
         profileImageStorage.delete(previousImageUrl);
-        return UserResponse.from(user, profile);
+        return UserResponse.from(user);
     }
 
     @Transactional
     public UserResponse deleteProfileImage(Long userId) {
         User user = findUser(userId);
-        UserProfile profile = userProfileRepository.findByUserId(userId).orElse(null);
-        if (profile == null || profile.getProfileImageUrl() == null) {
-            return UserResponse.from(user, profile);
+        if (user.getProfileImageUrl() == null) {
+            return UserResponse.from(user);
         }
-        String previousImageUrl = profile.getProfileImageUrl();
-        profile.updateProfileImageUrl(null);
+        String previousImageUrl = user.getProfileImageUrl();
+        user.updateProfileImageUrl(null);
         profileImageStorage.delete(previousImageUrl);
-        return UserResponse.from(user, profile);
+        return UserResponse.from(user);
     }
 
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private UserProfile getOrCreateProfile(Long userId) {
-        return userProfileRepository.findByUserId(userId)
-                .orElseGet(() -> userProfileRepository.save(UserProfile.create(userId)));
-    }
-
-    private UserResponse response(User user) {
-        UserProfile profile = userProfileRepository.findByUserId(user.getId()).orElse(null);
-        return UserResponse.from(user, profile);
     }
 
     private String normalize(String value) {

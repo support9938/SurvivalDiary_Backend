@@ -62,6 +62,9 @@ public class User {
     @Column(name = "signup_interest", length = 255)
     private String signupInterest;
 
+    @Column(length = 500)
+    private String bio;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
@@ -72,7 +75,7 @@ public class User {
     @Builder
     private User(String email, String password, String name, String nickname, String profileImageUrl, String phone,
                  LocalDate birthDate, Integer birthYear, Gender gender, String region,
-                 String signupInterest, Role role) {
+                 String signupInterest, String bio, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -84,23 +87,8 @@ public class User {
         this.gender = gender;
         this.region = region;
         this.signupInterest = signupInterest;
+        this.bio = bio;
         this.role = role != null ? role : Role.USER;
-    }
-
-    public void applySocialProfile(String email, String name, String nickname, String profileImageUrl, String phone, Gender gender,
-                                   Integer birthYear, LocalDate birthDate) {
-        if (email != null && !email.isBlank()) this.email = email;
-        if (name != null && !name.isBlank()) {
-            this.name = name.length() <= 50 ? name : name.substring(0, 50);
-        }
-        if (nickname != null && !nickname.isBlank()) {
-            this.nickname = nickname.length() <= 50 ? nickname : nickname.substring(0, 50);
-        }
-        if (profileImageUrl != null && !profileImageUrl.isBlank()) this.profileImageUrl = profileImageUrl;
-        if (phone != null && !phone.isBlank()) this.phone = phone;
-        if (gender != null) this.gender = gender;
-        if (birthYear != null) this.birthYear = birthYear;
-        if (birthDate != null) this.birthDate = birthDate;
     }
 
     @PrePersist
@@ -115,12 +103,18 @@ public class User {
             String phone,
             LocalDate birthDate,
             Gender gender,
-            String region) {
+            String region,
+            String bio) {
         this.name = name;
         this.phone = phone;
         this.birthDate = birthDate;
         this.gender = gender;
         this.region = region;
+        this.bio = bio;
+    }
+
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public enum Role { USER, ADMIN }
