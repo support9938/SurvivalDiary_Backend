@@ -27,7 +27,7 @@ public class PolicyRecommendationService {
             throw new BusinessException(ErrorCode.POLICY_PREFERENCE_REQUIRED);
         }
 
-        return policyService.search(new PolicySearchRequest(
+        return policyService.recommend(new PolicySearchRequest(
                 preference.age(),
                 preference.regionCode(),
                 preference.districtCode(),

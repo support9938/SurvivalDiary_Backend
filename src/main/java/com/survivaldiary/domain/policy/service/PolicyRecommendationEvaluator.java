@@ -3,12 +3,14 @@ package com.survivaldiary.domain.policy.service;
 import com.survivaldiary.domain.policy.client.dto.YouthPolicyItem;
 import com.survivaldiary.domain.policy.dto.PolicyCategory;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
+import com.survivaldiary.domain.policy.dto.PolicyMatchSignal;
 import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import com.survivaldiary.domain.policy.dto.PolicySearchRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -16,47 +18,79 @@ import java.util.Set;
 @Component
 public class PolicyRecommendationEvaluator {
 
-    private static final int RECOMMENDED_PRIORITY = 300;
-    private static final int CHECK_REQUIRED_PRIORITY = 200;
+    private static final int RECOMMENDED_PRIORITY = 1_000;
+    private static final int CHECK_REQUIRED_PRIORITY = 500;
     private static final int DISCOVER_PRIORITY = 100;
+    private static final int RECOMMENDATION_THRESHOLD = 30;
 
     public PolicyRecommendationResult evaluate(
             YouthPolicyItem item,
             PolicySearchRequest request,
             PolicyMatchResult matchResult
     ) {
-        InterestMatch interestMatch = interestMatch(item, request.requestedInterests());
         List<String> positiveReasons = new ArrayList<>();
+        Set<PolicyMatchSignal> signals = new LinkedHashSet<>();
+        int personalizationScore = 0;
 
+        PolicyTargetClassifier.JobMatch jobMatch = PolicyTargetClassifier.classifyJob(
+                item.jobCd(),
+                request.requestedWorkStatus()
+        );
+        if (jobMatch == PolicyTargetClassifier.JobMatch.MATCHED) {
+            positiveReasons.add("%s 대상 조건과 일치해요."
+                    .formatted(workStatusLabel(request.requestedWorkStatus())));
+            signals.add(PolicyMatchSignal.WORK_STATUS);
+            personalizationScore += 40;
+        }
+
+        String text = searchableText(item);
+        if (Boolean.TRUE.equals(request.jobSeeking())
+                && containsAny(text, "구직", "미취업", "취업준비", "취업 준비", "채용", "면접", "실업")) {
+            positiveReasons.add("현재 구직 상황에 직접 관련된 정책이에요.");
+            signals.add(PolicyMatchSignal.JOB_SEEKING);
+            personalizationScore += 35;
+        }
+
+        if (matchesEducationStatus(text, request.requestedEducationStatus())) {
+            positiveReasons.add("%s 교육 상태와 관련된 정책이에요."
+                    .formatted(educationStatusLabel(request.requestedEducationStatus())));
+            signals.add(PolicyMatchSignal.EDUCATION_STATUS);
+            personalizationScore += 30;
+        }
+
+        InterestMatch interestMatch = interestMatch(item, request.requestedInterests());
         if (interestMatch.matched()) {
             positiveReasons.add("관심 주제인 %s 분야와 관련된 정책이에요."
                     .formatted(interestMatch.label()));
-        }
-        if (Boolean.TRUE.equals(request.jobSeeking())
-                && categoryType(item) == PolicyCategory.EMPLOYMENT) {
-            positiveReasons.add("구직 중인 사용자에게 관련된 일자리 정책이에요.");
-        }
-        if (request.requestedWorkStatus() != null
-                && categoryType(item) == PolicyCategory.EMPLOYMENT
-                && !Boolean.TRUE.equals(request.jobSeeking())) {
-            positiveReasons.add("현재 근로 상황과 관련된 일자리 정책이에요.");
-        }
-        if (request.requestedEducationStatus() != null
-                && categoryType(item) == PolicyCategory.EDUCATION) {
-            positiveReasons.add("현재 교육 상태와 관련된 정책이에요.");
+            signals.add(interestMatch.signal());
+            personalizationScore += 35;
         }
 
-        String regionReason = regionReason(item.zipCd(), request);
-        if (regionReason != null) {
-            positiveReasons.add(regionReason);
+        RegionMatch regionMatch = regionMatch(item.zipCd(), request);
+        if (regionMatch.reason() != null) {
+            positiveReasons.add(regionMatch.reason());
+        }
+        if (regionMatch.signal() != null) {
+            signals.add(regionMatch.signal());
+            personalizationScore += regionMatch.score();
         }
 
-        String ageReason = ageReason(item, request.age());
-        if (ageReason != null) {
-            positiveReasons.add(ageReason);
+        if (matchesSpecificAge(item, request.age())) {
+            positiveReasons.add("만 %d세 연령 조건과 일치해요.".formatted(request.age()));
+            signals.add(PolicyMatchSignal.AGE);
+            personalizationScore += 8;
         }
 
-        int signalCount = Math.min(positiveReasons.size(), 3);
+        if (personalizationScore >= RECOMMENDATION_THRESHOLD) {
+            int eligibilityBonus = matchResult.status() == PolicyEligibilityStatus.MATCHED ? 20 : 0;
+            return new PolicyRecommendationResult(
+                    PolicyRecommendationStatus.RECOMMENDED,
+                    positiveReasons.stream().limit(3).toList(),
+                    List.copyOf(signals),
+                    RECOMMENDED_PRIORITY + personalizationScore + eligibilityBonus
+            );
+        }
+
         if (matchResult.status() == PolicyEligibilityStatus.CHECK_REQUIRED) {
             List<String> reasons = new ArrayList<>(matchResult.reasons());
             positiveReasons.stream()
@@ -65,21 +99,8 @@ public class PolicyRecommendationEvaluator {
             return new PolicyRecommendationResult(
                     PolicyRecommendationStatus.CHECK_REQUIRED,
                     reasons,
-                    CHECK_REQUIRED_PRIORITY + signalCount
-            );
-        }
-
-        if (interestMatch.matched()
-                || Boolean.TRUE.equals(request.jobSeeking())
-                        && categoryType(item) == PolicyCategory.EMPLOYMENT
-                || request.requestedWorkStatus() != null
-                        && categoryType(item) == PolicyCategory.EMPLOYMENT
-                || request.requestedEducationStatus() != null
-                        && categoryType(item) == PolicyCategory.EDUCATION) {
-            return new PolicyRecommendationResult(
-                    PolicyRecommendationStatus.RECOMMENDED,
-                    positiveReasons.stream().limit(3).toList(),
-                    RECOMMENDED_PRIORITY + signalCount
+                    List.copyOf(signals),
+                    CHECK_REQUIRED_PRIORITY + personalizationScore
             );
         }
 
@@ -90,56 +111,121 @@ public class PolicyRecommendationEvaluator {
         return new PolicyRecommendationResult(
                 PolicyRecommendationStatus.DISCOVER,
                 reasons,
-                DISCOVER_PRIORITY + signalCount
+                List.copyOf(signals),
+                DISCOVER_PRIORITY + personalizationScore
         );
     }
 
     private InterestMatch interestMatch(YouthPolicyItem item, Set<String> interests) {
         PolicyCategory category = categoryType(item);
         if (category != null && interests.contains(category.name())) {
-            return new InterestMatch(true, categoryLabel(category));
+            return new InterestMatch(
+                    true,
+                    categoryLabel(category),
+                    interestSignal(category)
+            );
         }
 
         String text = searchableText(item);
         if (interests.contains("ASSET_BUILDING")
                 && containsAny(text, "자산", "금융", "저축", "목돈", "재무")) {
-            return new InterestMatch(true, "자산 형성");
+            return new InterestMatch(
+                    true,
+                    "자산 형성",
+                    PolicyMatchSignal.INTEREST_ASSET_BUILDING
+            );
         }
         if (interests.contains("TRANSPORT")
                 && containsAny(text, "교통", "대중교통", "통학", "통근")) {
-            return new InterestMatch(true, "교통");
+            return new InterestMatch(
+                    true,
+                    "교통",
+                    PolicyMatchSignal.INTEREST_TRANSPORT
+            );
         }
-        return new InterestMatch(false, null);
+        return new InterestMatch(false, null, null);
     }
 
-    private String regionReason(String zipCodes, PolicySearchRequest request) {
+    private RegionMatch regionMatch(String zipCodes, PolicySearchRequest request) {
         if (isBlank(zipCodes)) {
-            return null;
+            return RegionMatch.none();
         }
         if (zipCodes.contains("전국")) {
-            return "전국에서 신청할 수 있는 정책이에요.";
+            return new RegionMatch("전국에서 신청할 수 있는 정책이에요.", null, 0);
         }
 
         Set<String> codes = tokens(zipCodes);
         if (request.districtCode() != null && codes.contains(request.districtCode())) {
-            return "선택한 시·군·구 거주 조건과 일치해요.";
+            return new RegionMatch(
+                    "선택한 시·군·구 거주 조건과 일치해요.",
+                    PolicyMatchSignal.DISTRICT,
+                    18
+            );
         }
         if (codes.stream().anyMatch(code -> code.startsWith(request.regionCode()))) {
-            return "선택한 시·도 거주 조건과 일치해요.";
+            return new RegionMatch(
+                    "선택한 시·도 거주 조건과 일치해요.",
+                    PolicyMatchSignal.REGION,
+                    12
+            );
         }
-        return null;
+        return RegionMatch.none();
     }
 
-    private String ageReason(YouthPolicyItem item, int age) {
+    private boolean matchesSpecificAge(YouthPolicyItem item, int age) {
         if ("N".equalsIgnoreCase(normalize(item.sprtTrgtAgeLmtYn()))) {
-            return "연령 제한 없이 신청할 수 있어요.";
+            return false;
         }
         Integer minAge = parseInteger(item.sprtTrgtMinAge());
         Integer maxAge = parseInteger(item.sprtTrgtMaxAge());
-        if (minAge != null && maxAge != null && age >= minAge && age <= maxAge) {
-            return "만 %d세 연령 조건과 일치해요.".formatted(age);
+        return minAge != null && maxAge != null && age >= minAge && age <= maxAge;
+    }
+
+    private boolean matchesEducationStatus(String text, String educationStatus) {
+        if (educationStatus == null) {
+            return false;
         }
-        return null;
+        return switch (educationStatus) {
+            case "STUDENT" -> containsAny(text, "재학생", "재학", "대학생", "학생");
+            case "ON_LEAVE" -> containsAny(text, "휴학생", "휴학");
+            case "GRADUATED" -> containsAny(text, "졸업생", "졸업자", "졸업");
+            case "NOT_STUDENT" -> containsAny(text, "비진학", "학교 밖", "미진학");
+            default -> false;
+        };
+    }
+
+    private String workStatusLabel(String workStatus) {
+        return switch (workStatus) {
+            case "EMPLOYED" -> "재직자";
+            case "SELF_EMPLOYED" -> "자영업자";
+            case "UNEMPLOYED" -> "미취업자";
+            case "FREELANCER" -> "프리랜서";
+            case "DAILY_WORKER" -> "일용근로자";
+            case "PROSPECTIVE_FOUNDER" -> "예비창업자";
+            case "SHORT_TERM_WORKER" -> "단기근로자";
+            case "FARMER" -> "영농종사자";
+            default -> "현재 근로 상태";
+        };
+    }
+
+    private String educationStatusLabel(String educationStatus) {
+        return switch (educationStatus) {
+            case "STUDENT" -> "재학 중인";
+            case "ON_LEAVE" -> "휴학 중인";
+            case "GRADUATED" -> "졸업한";
+            case "NOT_STUDENT" -> "학생이 아닌";
+            default -> "현재";
+        };
+    }
+
+    private PolicyMatchSignal interestSignal(PolicyCategory category) {
+        return switch (category) {
+            case EMPLOYMENT -> PolicyMatchSignal.INTEREST_EMPLOYMENT;
+            case HOUSING -> PolicyMatchSignal.INTEREST_HOUSING;
+            case EDUCATION -> PolicyMatchSignal.INTEREST_EDUCATION;
+            case WELFARE_CULTURE -> PolicyMatchSignal.INTEREST_WELFARE_CULTURE;
+            case PARTICIPATION_RIGHTS -> PolicyMatchSignal.INTEREST_PARTICIPATION_RIGHTS;
+        };
     }
 
     private PolicyCategory categoryType(YouthPolicyItem item) {
@@ -215,6 +301,20 @@ public class PolicyRecommendationEvaluator {
         return value == null || value.isBlank();
     }
 
-    private record InterestMatch(boolean matched, String label) {
+    private record InterestMatch(
+            boolean matched,
+            String label,
+            PolicyMatchSignal signal
+    ) {
+    }
+
+    private record RegionMatch(
+            String reason,
+            PolicyMatchSignal signal,
+            int score
+    ) {
+        private static RegionMatch none() {
+            return new RegionMatch(null, null, 0);
+        }
     }
 }

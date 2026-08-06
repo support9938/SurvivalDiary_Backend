@@ -80,6 +80,16 @@ class PolicyMatcherTest {
     }
 
     @Test
+    void 명확히_다른_근로_상태_전용_정책은_추천_후보에서_제외한다() {
+        PolicyMatchResult result = matcher.match(
+                item("19", "34", "Y", "11680", "0013001", "0043001", "일자리"),
+                expandedRequest("UNEMPLOYED", null, null)
+        );
+
+        assertThat(result.included()).isFalse();
+    }
+
+    @Test
     void 공식_교육_분야를_대분류로_직접_판정한다() {
         PolicyMatchResult result = matcher.match(
                 item("19", "34", "Y", "11680", "0013010", "0043001", "교육"),

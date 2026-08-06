@@ -3,6 +3,7 @@ package com.survivaldiary.domain.policy.service;
 import com.survivaldiary.domain.policy.client.dto.YouthPolicyItem;
 import com.survivaldiary.domain.policy.dto.PolicyApplicationPeriodType;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
+import com.survivaldiary.domain.policy.dto.PolicyMatchSignal;
 import com.survivaldiary.domain.policy.dto.PolicyOfficialLinkType;
 import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
 import com.survivaldiary.domain.policy.dto.PolicySupportAmountType;
@@ -25,6 +26,7 @@ class PolicyMapperTest {
                 new PolicyRecommendationResult(
                         PolicyRecommendationStatus.CHECK_REQUIRED,
                         List.of("소득 조건 확인 필요"),
+                        List.of(PolicyMatchSignal.DISTRICT),
                         200
                 )
         );
@@ -36,6 +38,7 @@ class PolicyMapperTest {
         assertThat(summary.eligibilityReasons()).containsExactly("소득 조건 확인 필요");
         assertThat(summary.recommendationStatus())
                 .isEqualTo(PolicyRecommendationStatus.CHECK_REQUIRED);
+        assertThat(summary.matchSignals()).containsExactly(PolicyMatchSignal.DISTRICT);
         assertThat(summary.applicationPeriodType())
                 .isEqualTo(PolicyApplicationPeriodType.FIXED);
         assertThat(summary.applicationStartDate()).isEqualTo(LocalDate.of(2026, 7, 1));
