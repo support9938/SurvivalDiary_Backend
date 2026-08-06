@@ -56,6 +56,9 @@ class PolicyMapperTest {
         var monthlySuffix = mapper.toDetail(
                 withSupportText(item("https://example.org/apply"), "주거비 200,000원/월 지원")
         );
+        var maximumSuffix = mapper.toDetail(
+                withSupportText(item("https://example.org/apply"), "자격증 응시료 10만 원 이내 지원")
+        );
 
         assertThat(monthlyMaximum.supportAmount()).isEqualTo(200_000L);
         assertThat(monthlyMaximum.supportAmountType())
@@ -66,6 +69,8 @@ class PolicyMapperTest {
         assertThat(fixed.supportAmountType()).isEqualTo(PolicySupportAmountType.FIXED);
         assertThat(monthlySuffix.supportAmount()).isEqualTo(200_000L);
         assertThat(monthlySuffix.supportAmountType()).isEqualTo(PolicySupportAmountType.MONTHLY);
+        assertThat(maximumSuffix.supportAmount()).isEqualTo(100_000L);
+        assertThat(maximumSuffix.supportAmountType()).isEqualTo(PolicySupportAmountType.MAXIMUM);
     }
 
     @Test
@@ -85,12 +90,20 @@ class PolicyMapperTest {
         var unclearQualifier = mapper.toDetail(
                 withSupportText(item("https://example.org/apply"), "월 최대 약 20만원 지원")
         );
+        var budget = mapper.toDetail(
+                withSupportText(item("https://example.org/apply"), "응시료의 50% 지원, 예산 100억 원 소진 시 마감")
+        );
+        var hourlyWage = mapper.toDetail(
+                withSupportText(item("https://example.org/apply"), "근무 보수는 시급 10,000원입니다.")
+        );
 
         assertThat(range.supportAmount()).isNull();
         assertThat(multiple.supportAmount()).isNull();
         assertThat(loan.supportAmount()).isNull();
         assertThat(yearly.supportAmount()).isNull();
         assertThat(unclearQualifier.supportAmount()).isNull();
+        assertThat(budget.supportAmount()).isNull();
+        assertThat(hourlyWage.supportAmount()).isNull();
     }
 
     @Test
@@ -142,6 +155,7 @@ class PolicyMapperTest {
         var login = mapper.toDetail(item("https://example.org/login?service=apply"));
         var homepage = mapper.toDetail(item("https://example.org/"));
         var queryApplication = mapper.toDetail(item("https://example.org/?policy=POLICY-1"));
+        var accountRequired = mapper.toDetail(item("https://example.org/security/joinAgree"));
 
         assertThat(application.officialLinkType())
                 .isEqualTo(PolicyOfficialLinkType.APPLICATION_CANDIDATE);
@@ -151,6 +165,8 @@ class PolicyMapperTest {
                 .isEqualTo(PolicyOfficialLinkType.INSTITUTION_HOME);
         assertThat(queryApplication.officialLinkType())
                 .isEqualTo(PolicyOfficialLinkType.APPLICATION_CANDIDATE);
+        assertThat(accountRequired.officialLinkType())
+                .isEqualTo(PolicyOfficialLinkType.LOGIN_REQUIRED);
     }
 
     private YouthPolicyItem item(String applicationUrl) {
