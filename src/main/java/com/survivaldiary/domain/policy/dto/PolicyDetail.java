@@ -13,8 +13,11 @@ public record PolicyDetail(
         @Schema(description = "정책명") String title,
         @Schema(description = "정책 설명") String description,
         @Schema(description = "구조화된 지원금. 확인 불가 시 null") Long supportAmount,
+        @Schema(description = "지원 금액 유형. 확인 불가 시 null") PolicySupportAmountType supportAmountType,
         @Schema(description = "지원 내용 원문") String supportText,
         @Schema(description = "신청 기간 원문") String applicationPeriodText,
+        @Schema(description = "신청 기간 유형") PolicyApplicationPeriodType applicationPeriodType,
+        @Schema(description = "안전하게 해석된 신청 시작일. 확인 불가 시 null") LocalDate applicationStartDate,
         @Schema(description = "안전하게 해석된 신청 종료일. 상시·마감·해석 불가 시 null") LocalDate applicationEndDate,
         @Schema(description = "지원 대상 요약") String target,
         @Schema(description = "주관 기관") String agency,
@@ -22,6 +25,7 @@ public record PolicyDetail(
         @Schema(description = "신청 방법") String applicationMethod,
         @Schema(description = "제출 서류") List<String> documents,
         @Schema(description = "공식 신청 URL") String officialUrl,
+        @Schema(description = "공식 신청 URL의 이동 성격") PolicyOfficialLinkType officialLinkType,
         @Schema(description = "참고 URL") List<String> referenceUrls
 ) {
 }

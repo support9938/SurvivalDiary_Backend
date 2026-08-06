@@ -5,6 +5,7 @@ import com.survivaldiary.domain.policy.client.YouthPolicyResponseParser;
 import com.survivaldiary.domain.policy.client.dto.YouthPolicyItem;
 import com.survivaldiary.domain.policy.client.dto.YouthPolicySearchRequest;
 import com.survivaldiary.domain.policy.dto.PolicyCategory;
+import com.survivaldiary.domain.policy.dto.PolicyApplicationPeriodType;
 import com.survivaldiary.domain.policy.dto.PolicyDetail;
 import com.survivaldiary.domain.policy.dto.PolicyEligibilityStatus;
 import com.survivaldiary.domain.policy.dto.PolicyRecommendationStatus;
@@ -242,7 +243,10 @@ class PolicyServiceTest {
                 "정책명",
                 "요약",
                 null,
+                null,
                 "지원 내용",
+                null,
+                PolicyApplicationPeriodType.UNKNOWN,
                 null,
                 null,
                 "지원 대상",
