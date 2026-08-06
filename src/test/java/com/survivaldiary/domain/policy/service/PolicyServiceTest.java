@@ -242,6 +242,7 @@ class PolicyServiceTest {
                 PolicyCategory.HOUSING,
                 "정책명",
                 "요약",
+                "청년의 안정적인 주거 생활을 지원해요",
                 null,
                 null,
                 "지원 내용",

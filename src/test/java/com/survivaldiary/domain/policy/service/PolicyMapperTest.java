@@ -74,6 +74,46 @@ class PolicyMapperTest {
     }
 
     @Test
+    void 목록용_요약은_지원_주제와_구조화_금액을_짧은_문장으로_조합한다() {
+        var summary = mapper.toSummary(
+                withSupportText(
+                        item("https://example.org/apply"),
+                        "□ 지원 기간은 최대 12개월\n○ 월세를 월 최대 20만 원 지원"
+                ),
+                PolicyMatchResult.matched(),
+                new PolicyRecommendationResult(
+                        PolicyRecommendationStatus.RECOMMENDED,
+                        List.of(),
+                        300
+                )
+        );
+
+        assertThat(summary.shortSummary())
+                .isEqualTo("청년의 월세와 주거비를 월 최대 20만원 지원해요")
+                .doesNotContain("○", "□", "•");
+    }
+
+    @Test
+    void 금액이_없어도_전체_지원_내용의_주제를_분석해_한_줄로_요약한다() {
+        var summary = mapper.toSummary(
+                withSupportText(
+                        item("https://example.org/apply"),
+                        "■ 참여자를 위한 종합 안내\n○ 면접 교육과 취업 상담 제공"
+                ),
+                PolicyMatchResult.matched(),
+                new PolicyRecommendationResult(
+                        PolicyRecommendationStatus.RECOMMENDED,
+                        List.of(),
+                        300
+                )
+        );
+
+        assertThat(summary.shortSummary())
+                .isEqualTo("청년의 취업과 일자리 준비를 지원해요")
+                .doesNotContain("○", "■", "•");
+    }
+
+    @Test
     void 범위_복수_금액과_대출_금액은_지원금으로_추정하지_않는다() {
         var range = mapper.toDetail(
                 withSupportText(item("https://example.org/apply"), "월 10~20만원 지원")

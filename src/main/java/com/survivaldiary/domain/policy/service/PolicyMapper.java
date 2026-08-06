@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 @Component
 public class PolicyMapper {
 
+    private final PolicyShortSummaryGenerator shortSummaryGenerator =
+            new PolicyShortSummaryGenerator();
+
     private static final String FIXED_PERIOD_CODE = "0057001";
     private static final String ALWAYS_PERIOD_CODE = "0057002";
     private static final String CLOSED_PERIOD_CODE = "0057003";
@@ -80,6 +83,11 @@ public class PolicyMapper {
                 categoryType(item),
                 fallback(item.plcyNm(), "정책명을 확인해 주세요."),
                 fallback(item.plcyExplnCn(), "정책 상세 내용을 확인해 주세요."),
+                shortSummaryGenerator.generate(
+                        item,
+                        supportAmount.amount(),
+                        supportAmount.type()
+                ),
                 supportAmount.amount(),
                 supportAmount.type(),
                 fallback(item.plcySprtCn(), "지원 내용을 확인해 주세요."),
