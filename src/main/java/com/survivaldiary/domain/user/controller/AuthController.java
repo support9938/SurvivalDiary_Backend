@@ -6,6 +6,7 @@ import com.survivaldiary.domain.user.dto.SignupRequest;
 import com.survivaldiary.domain.user.dto.SocialLoginRequest;
 import com.survivaldiary.domain.user.dto.TokenResponse;
 import com.survivaldiary.domain.user.dto.WebSocialLoginRequest;
+import com.survivaldiary.domain.user.dto.WebTokenResponse;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.service.AuthService;
 import com.survivaldiary.global.common.ApiResponse;
@@ -20,6 +21,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 
 @Tag(name = "Auth", description = "회원가입 / 로그인 / 토큰")
 @RestController
@@ -27,7 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final String REFRESH_COOKIE = "survival_diary_refresh";
+
     private final AuthService authService;
+
+    @Value("${app.auth.refresh-cookie-secure:false}")
+    private boolean refreshCookieSecure;
 
     @Operation(summary = "회원가입",
             description = "이메일 중복 시 409(U001), 검증 실패 시 400(C001)을 반환한다.")
@@ -43,6 +53,14 @@ public class AuthController {
     public ResponseEntity<ApiResponse<TokenResponse>> login(
             @Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(authService.login(request)));
+    }
+
+    @Operation(summary = "웹 이메일 로그인",
+            description = "액세스 토큰은 응답으로, 리프레시 토큰은 HttpOnly 쿠키로 발급한다.")
+    @PostMapping("/web/login")
+    public ResponseEntity<ApiResponse<WebTokenResponse>> webLogin(
+            @Valid @RequestBody LoginRequest request) {
+        return webLoginResponse(authService.login(request));
     }
 
     @Operation(summary = "카카오 앱 로그인",
@@ -64,17 +82,60 @@ public class AuthController {
     }
 
     @PostMapping("/web/social/kakao")
-    public ResponseEntity<ApiResponse<TokenResponse>> webLoginWithKakao(
+    public ResponseEntity<ApiResponse<WebTokenResponse>> webLoginWithKakao(
             @Valid @RequestBody WebSocialLoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.webSocialLogin(SocialAccount.Provider.KAKAO, request)));
+        return webLoginResponse(
+                authService.webSocialLogin(SocialAccount.Provider.KAKAO, request));
     }
 
     @PostMapping("/web/social/naver")
-    public ResponseEntity<ApiResponse<TokenResponse>> webLoginWithNaver(
+    public ResponseEntity<ApiResponse<WebTokenResponse>> webLoginWithNaver(
             @Valid @RequestBody WebSocialLoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.webSocialLogin(SocialAccount.Provider.NAVER, request)));
+        return webLoginResponse(
+                authService.webSocialLogin(SocialAccount.Provider.NAVER, request));
+    }
+
+    @PostMapping("/web/token/refresh")
+    public ResponseEntity<ApiResponse<WebTokenResponse>> refreshWebToken(
+            @CookieValue(name = REFRESH_COOKIE) String refreshToken) {
+        return webLoginResponse(authService.refresh(new RefreshTokenRequest(refreshToken)));
+    }
+
+    @PostMapping("/web/logout")
+    public ResponseEntity<ApiResponse<Void>> logoutWeb(
+            @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            authService.logout(new RefreshTokenRequest(refreshToken));
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie().toString())
+                .body(ApiResponse.ok());
+    }
+
+    private ResponseEntity<ApiResponse<WebTokenResponse>> webLoginResponse(TokenResponse tokens) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie(tokens).toString())
+                .body(ApiResponse.ok(WebTokenResponse.from(tokens)));
+    }
+
+    private ResponseCookie refreshCookie(TokenResponse tokens) {
+        return ResponseCookie.from(REFRESH_COOKIE, tokens.refreshToken())
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite("Lax")
+                .path("/api/auth/web")
+                .maxAge(14 * 24 * 60 * 60)
+                .build();
+    }
+
+    private ResponseCookie expiredRefreshCookie() {
+        return ResponseCookie.from(REFRESH_COOKIE, "")
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite("Lax")
+                .path("/api/auth/web")
+                .maxAge(0)
+                .build();
     }
 
     @Operation(summary = "Refresh access token")
