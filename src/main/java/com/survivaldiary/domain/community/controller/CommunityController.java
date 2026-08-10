@@ -1,6 +1,8 @@
 package com.survivaldiary.domain.community.controller;
 
 import com.survivaldiary.domain.community.dto.CreatePostRequest;
+import com.survivaldiary.domain.community.dto.CommentResponse;
+import com.survivaldiary.domain.community.dto.CreateCommentRequest;
 import com.survivaldiary.domain.community.dto.PostResponse;
 import com.survivaldiary.domain.community.service.CommunityService;
 import com.survivaldiary.global.common.ApiResponse;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/community/posts")
@@ -67,5 +70,27 @@ public class CommunityController {
     public ResponseEntity<ApiResponse<PostResponse>> bookmark(
             @AuthenticationPrincipal Long userId, @PathVariable Long postId) {
         return ResponseEntity.ok(ApiResponse.ok(communityService.toggleBookmark(postId, userId)));
+    }
+
+    @GetMapping("/{postId}/comments")
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> comments(
+            @AuthenticationPrincipal Long userId, @PathVariable Long postId) {
+        return ResponseEntity.ok(ApiResponse.ok(communityService.comments(postId, userId)));
+    }
+
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<ApiResponse<CommentResponse>> createComment(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody CreateCommentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(communityService.createComment(postId, userId, request)));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            @AuthenticationPrincipal Long userId, @PathVariable Long commentId) {
+        communityService.deleteComment(commentId, userId);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }
