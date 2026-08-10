@@ -1,12 +1,16 @@
 package com.survivaldiary.domain.community.service;
 
 import com.survivaldiary.domain.community.dto.CreatePostRequest;
+import com.survivaldiary.domain.community.dto.CommentResponse;
+import com.survivaldiary.domain.community.dto.CreateCommentRequest;
+import com.survivaldiary.domain.community.entity.Comment;
 import com.survivaldiary.domain.community.dto.PostResponse;
 import com.survivaldiary.domain.community.entity.Post;
 import com.survivaldiary.domain.community.entity.PostBookmark;
 import com.survivaldiary.domain.community.repository.PostBookmarkRepository;
 import com.survivaldiary.domain.community.repository.PostInteractionRepository;
 import com.survivaldiary.domain.community.repository.PostRepository;
+import com.survivaldiary.domain.community.repository.CommentRepository;
 import com.survivaldiary.domain.user.entity.User;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.global.exception.BusinessException;
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommunityService {
     private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
     private final PostBookmarkRepository bookmarkRepository;
     private final PostInteractionRepository interactionRepository;
     private final UserRepository userRepository;
@@ -90,6 +95,33 @@ public class CommunityService {
             bookmarkRepository.save(new PostBookmark(post, user));
         }
         return get(postId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentResponse> comments(Long postId, Long userId) {
+        requirePost(postId);
+        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId).stream()
+                .map(comment -> CommentResponse.from(comment, userId))
+                .toList();
+    }
+
+    @Transactional
+    public CommentResponse createComment(Long postId, Long userId, CreateCommentRequest request) {
+        Post post = requirePost(postId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Comment comment = commentRepository.save(new Comment(post, user, request.content().trim()));
+        return CommentResponse.from(comment, userId);
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        commentRepository.delete(comment);
     }
 
     private Post requirePost(Long id) {
