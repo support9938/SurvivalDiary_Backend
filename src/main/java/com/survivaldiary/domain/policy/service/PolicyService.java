@@ -68,7 +68,7 @@ public class PolicyService {
         boolean defaultDiscovery = request.category() == null && request.keyword() == null;
         return search(
                 request,
-                defaultDiscovery ? RECOMMENDATION_PROVIDER_PAGE_COUNT : 1,
+                RECOMMENDATION_PROVIDER_PAGE_COUNT,
                 defaultDiscovery,
                 excludedPolicyIds == null ? Set.of() : Set.copyOf(excludedPolicyIds)
         );
