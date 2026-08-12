@@ -4,6 +4,7 @@ import com.survivaldiary.domain.map.client.RealEstateRentClient;
 import com.survivaldiary.domain.map.client.NaverGeocodingClient;
 import com.survivaldiary.domain.map.dto.HousingRentDealRequest;
 import com.survivaldiary.domain.map.dto.HousingRentDealResponse;
+import com.survivaldiary.domain.map.dto.MapViewportBounds;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,19 @@ public class HousingRentDealService {
     }
 
     public List<HousingRentDealResponse> findDeals(HousingRentDealRequest request) {
+        return findDeals(request, MapViewportBounds.empty());
+    }
+
+    public List<HousingRentDealResponse> findDeals(
+            HousingRentDealRequest request,
+            MapViewportBounds bounds
+    ) {
+        MapViewportBounds requestedBounds = bounds == null
+                ? MapViewportBounds.empty()
+                : bounds;
+        if (!requestedBounds.isValid()) {
+            throw new BusinessException(ErrorCode.INVALID_MAP_FILTER);
+        }
         YearMonth endMonth = validateAndParse(request);
         List<HousingRentDealResponse> deals = new ArrayList<>();
         for (int offset = 0; offset < request.requestedMonths(); offset++) {
@@ -48,10 +62,21 @@ public class HousingRentDealService {
                         HousingRentDealResponse::contractDate,
                         Comparator.reverseOrder()
                 ))
-                .limit(request.requestedLimit())
                 .toList();
+        if (!requestedBounds.isSpecified()) {
+            return selectedDeals.stream()
+                    .limit(request.requestedLimit())
+                    .parallel()
+                    .map(deal -> addLocation(deal, request.region()))
+                    .toList();
+        }
         return selectedDeals.parallelStream()
                 .map(deal -> addLocation(deal, request.region()))
+                .filter(deal -> requestedBounds.contains(
+                        deal.latitude(),
+                        deal.longitude()
+                ))
+                .limit(request.requestedLimit())
                 .toList();
     }
 

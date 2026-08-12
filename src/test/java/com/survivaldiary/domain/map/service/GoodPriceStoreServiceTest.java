@@ -3,6 +3,7 @@ package com.survivaldiary.domain.map.service;
 import com.survivaldiary.domain.map.client.GoodPriceStoreClient;
 import com.survivaldiary.domain.map.client.NaverGeocodingClient;
 import com.survivaldiary.domain.map.dto.GoodPriceStoreResponse;
+import com.survivaldiary.domain.map.dto.MapViewportBounds;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,6 +95,45 @@ class GoodPriceStoreServiceTest {
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_MAP_FILTER);
     }
 
+    @Test
+    void 지도_경계를_요청하면_지역의_전체_업소를_좌표화한_뒤_경계_안의_업소만_페이지로_반환한다() {
+        GoodPriceStoreResponse.Store inside = store(
+                "지도 안 가게",
+                "7000",
+                "서울특별시 종로구 안쪽길 1"
+        );
+        GoodPriceStoreResponse.Store outside = store(
+                "지도 밖 가게",
+                "8000",
+                "서울특별시 종로구 바깥길 1"
+        );
+        when(client.fetchStores(1, 1000, "서울특별시", "종로구"))
+                .thenReturn(response(List.of(outside, inside), 2));
+        when(geocodingClient.findCoordinates(inside.address()))
+                .thenReturn(Optional.of(
+                        new NaverGeocodingClient.Coordinates(37.50, 127.00)
+                ));
+        when(geocodingClient.findCoordinates(outside.address()))
+                .thenReturn(Optional.of(
+                        new NaverGeocodingClient.Coordinates(37.70, 127.20)
+                ));
+
+        var result = service.findStores(
+                0,
+                20,
+                "서울특별시",
+                "종로구",
+                "name",
+                new MapViewportBounds(37.49, 126.99, 37.51, 127.01)
+        );
+
+        assertThat(result.content())
+                .extracting(GoodPriceStoreResponse.Store::name)
+                .containsExactly("지도 안 가게");
+        assertThat(result.totalElements()).isEqualTo(1);
+        verify(client).fetchStores(1, 1000, "서울특별시", "종로구");
+    }
+
     private GoodPriceStoreResponse response(
             List<GoodPriceStoreResponse.Store> stores,
             int totalCount
@@ -109,13 +149,21 @@ class GoodPriceStoreServiceTest {
     }
 
     private GoodPriceStoreResponse.Store store(String name, String price) {
+        return store(name, price, "서울특별시 종로구");
+    }
+
+    private GoodPriceStoreResponse.Store store(
+            String name,
+            String price,
+            String address
+    ) {
         return new GoodPriceStoreResponse.Store(
                 "서울특별시",
                 "종로구",
                 "한식",
                 name,
                 "02-000-0000",
-                "서울특별시 종로구",
+                address,
                 "메뉴",
                 price,
                 "",
