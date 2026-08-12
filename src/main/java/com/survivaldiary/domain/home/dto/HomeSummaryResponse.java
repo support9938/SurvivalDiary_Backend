@@ -11,6 +11,9 @@ public record HomeSummaryResponse(
         long savedToday,
         long weeklyBudget,
         long weeklySpent,
-        Long topCategoryId
+        long monthlyBudget,
+        long monthlySpent,
+        Long topCategoryId,
+        Long monthlyTopCategoryId
 ) {
 }

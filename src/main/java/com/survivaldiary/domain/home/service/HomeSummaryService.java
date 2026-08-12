@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.home.service;
 
 import com.survivaldiary.domain.budget.repository.BudgetRepository;
+import com.survivaldiary.domain.budget.repository.MonthlyBudgetRepository;
 import com.survivaldiary.domain.expense.repository.ExpenseRepository;
 import com.survivaldiary.domain.home.dto.HomeSummaryResponse;
 import com.survivaldiary.domain.user.entity.User;
@@ -23,6 +24,7 @@ public class HomeSummaryService {
 
     private final UserRepository userRepository;
     private final BudgetRepository budgetRepository;
+    private final MonthlyBudgetRepository monthlyBudgetRepository;
     private final ExpenseRepository expenseRepository;
 
     @Transactional(readOnly = true)
@@ -38,6 +40,8 @@ public class HomeSummaryService {
         LocalDate tomorrow = today.plusDays(1);
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate nextWeekStart = weekStart.plusWeeks(1);
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDate nextMonthStart = monthStart.plusMonths(1);
 
         long dailyLimit = budgetRepository
                 .findFirstByUserIdAndBudgetDateLessThanEqualOrderByBudgetDateDesc(userId, today)
@@ -54,10 +58,26 @@ public class HomeSummaryService {
                 weekStart.atStartOfDay(),
                 nextWeekStart.atStartOfDay()
         );
+        long monthlyBudget = monthlyBudgetRepository
+                .findFirstByUserIdAndBudgetMonthLessThanEqualOrderByBudgetMonthDesc(userId, monthStart)
+                .map(budget -> budget.getAmount().longValue())
+                .orElse(0L);
+        long monthlySpent = expenseRepository.sumAmountByUserIdAndPeriod(
+                userId,
+                monthStart.atStartOfDay(),
+                nextMonthStart.atStartOfDay()
+        );
         Long topCategoryId = expenseRepository.findCategoryIdsBySpendDescending(
                         userId,
                         today.atStartOfDay(),
                         tomorrow.atStartOfDay()
+                ).stream()
+                .findFirst()
+                .orElse(null);
+        Long monthlyTopCategoryId = expenseRepository.findCategoryIdsByMonthlySpendDescending(
+                        userId,
+                        monthStart.atStartOfDay(),
+                        nextMonthStart.atStartOfDay()
                 ).stream()
                 .findFirst()
                 .orElse(null);
@@ -70,7 +90,10 @@ public class HomeSummaryService {
                 0L,
                 weeklyBudget,
                 weeklySpent,
-                topCategoryId
+                monthlyBudget,
+                monthlySpent,
+                topCategoryId,
+                monthlyTopCategoryId
         );
     }
 }

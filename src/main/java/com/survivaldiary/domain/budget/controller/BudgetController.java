@@ -45,4 +45,25 @@ public class BudgetController {
                 .cacheControl(CacheControl.noStore())
                 .body(ApiResponse.ok(budgetService.saveToday(userId, request)));
     }
+
+    @Operation(summary = "월간 예산 조회")
+    @GetMapping("/month")
+    public ResponseEntity<ApiResponse<BudgetResponse>> getMonth(
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ApiResponse.ok(budgetService.getMonth(userId)));
+    }
+
+    @Operation(summary = "월간 예산 저장")
+    @PutMapping("/month")
+    public ResponseEntity<ApiResponse<BudgetResponse>> saveMonth(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody BudgetAmountRequest request
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ApiResponse.ok(budgetService.saveMonth(userId, request)));
+    }
 }

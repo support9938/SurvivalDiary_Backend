@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);
+
+    boolean existsByCategoryAndTitle(String category, String title);
 }

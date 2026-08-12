@@ -35,24 +35,35 @@ public class CommunityService {
     public PostResponse create(Long userId, CreatePostRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        boolean commentsDisabled = user.getRole() == User.Role.ADMIN && request.commentsDisabled();
+        boolean commentsHidden = user.getRole() == User.Role.ADMIN && request.commentsHidden();
         Post post = postRepository.save(Post.builder().user(user).category(request.category())
                 .title(request.title()).content(request.content())
                 .hashtags(join(request.hashtags())).imageUrls(join(request.imageUrls()))
-                .imageAlignment(request.imageAlignment()).build());
+                .imageAlignment(request.imageAlignment())
+                .commentsDisabled(commentsDisabled)
+                .commentsHidden(commentsHidden)
+                .build());
         return response(post, userId);
     }
 
     @Transactional
     public PostResponse update(Long postId, Long userId, CreatePostRequest request) {
-        Post post = requireOwner(postId, userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Post post = requireOwner(postId, user);
+        boolean commentsDisabled = user.getRole() == User.Role.ADMIN && request.commentsDisabled();
+        boolean commentsHidden = user.getRole() == User.Role.ADMIN && request.commentsHidden();
         post.update(request.category(), request.title(), request.content(), join(request.hashtags()),
-                join(request.imageUrls()), request.imageAlignment());
+                join(request.imageUrls()), request.imageAlignment(), commentsDisabled, commentsHidden);
         return response(post, userId);
     }
 
     @Transactional
     public void delete(Long postId, Long userId) {
-        postRepository.delete(requireOwner(postId, userId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        postRepository.delete(requireOwner(postId, user));
     }
 
     @Transactional(readOnly = true)
@@ -69,9 +80,9 @@ public class CommunityService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)), userId);
     }
 
-    private Post requireOwner(Long postId, Long userId) {
+    private Post requireOwner(Long postId, User user) {
         Post post = requirePost(postId);
-        if (!post.getUser().getId().equals(userId)) {
+        if (user.getRole() != User.Role.ADMIN && !post.getUser().getId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         return post;
@@ -108,6 +119,9 @@ public class CommunityService {
     @Transactional
     public CommentResponse createComment(Long postId, Long userId, CreateCommentRequest request) {
         Post post = requirePost(postId);
+        if (post.isCommentsDisabled()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Comment comment = commentRepository.save(new Comment(post, user, request.content().trim()));
