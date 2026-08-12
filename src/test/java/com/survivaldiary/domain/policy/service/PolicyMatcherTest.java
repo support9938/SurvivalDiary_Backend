@@ -100,17 +100,42 @@ class PolicyMatcherTest {
     }
 
     @Test
-    void 교육_상태를_선택하고_학력_요건이_있으면_확인_필요로_포함한다() {
+    void 입력한_교육_단계와_학적_상태가_정책_학력_코드와_일치한다() {
         PolicyMatchResult result = matcher.match(
                 item(
-                        "19", "34", "Y", "11680", "0013010", "0043001", "교육", "0049001"
+                        "19", "34", "Y", "11680", "0013010", "0043001", "교육", "0049005"
                 ),
-                expandedRequest(null, "STUDENT", "EDUCATION")
+                educationRequest("UNIVERSITY_4_YEAR", "ENROLLED")
+        );
+
+        assertThat(result.included()).isTrue();
+        assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.MATCHED);
+    }
+
+    @Test
+    void 입력한_교육_단계와_정책_학력_코드가_명확히_다르면_제외한다() {
+        PolicyMatchResult result = matcher.match(
+                item(
+                        "19", "34", "Y", "11680", "0013010", "0043001", "교육", "0049002"
+                ),
+                educationRequest("UNIVERSITY_4_YEAR", "ENROLLED")
+        );
+
+        assertThat(result.included()).isFalse();
+    }
+
+    @Test
+    void 휴학처럼_공식_코드로_정확히_판정할_수_없으면_확인_필요로_포함한다() {
+        PolicyMatchResult result = matcher.match(
+                item(
+                        "19", "34", "Y", "11680", "0013010", "0043001", "교육", "0049005"
+                ),
+                educationRequest("COLLEGE_2_3_YEAR", "ON_LEAVE")
         );
 
         assertThat(result.included()).isTrue();
         assertThat(result.status()).isEqualTo(PolicyEligibilityStatus.CHECK_REQUIRED);
-        assertThat(result.reasons()).contains("재학·학력 조건을 공고문에서 확인해야 합니다.");
+        assertThat(result.reasons()).contains("교육 단계·학적 조건을 공고문에서 확인해야 합니다.");
     }
 
     private PolicySearchRequest request(String incomeRange) {
@@ -150,6 +175,29 @@ class PolicyMatcherTest {
                 null,
                 educationStatus,
                 Set.of()
+        );
+    }
+
+    private PolicySearchRequest educationRequest(
+            String educationLevel,
+            String enrollmentStatus
+    ) {
+        return new PolicySearchRequest(
+                27,
+                "11",
+                "11680",
+                null,
+                null,
+                "EDUCATION",
+                null,
+                1,
+                20,
+                null,
+                null,
+                null,
+                Set.of(),
+                educationLevel,
+                enrollmentStatus
         );
     }
 

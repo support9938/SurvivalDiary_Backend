@@ -42,7 +42,9 @@ public class PolicyRecommendationService {
                 preference.workStatus(),
                 preference.jobSeeking(),
                 preference.educationStatus(),
-                preference.interests()
+                preference.interests(),
+                preference.educationLevel(),
+                preference.enrollmentStatus()
         );
         Set<String> hiddenPolicyIds = hiddenPolicyService.hiddenPolicyIds(userId);
         return policyService.recommend(searchRequest, hiddenPolicyIds);

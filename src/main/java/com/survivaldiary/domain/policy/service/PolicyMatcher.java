@@ -28,7 +28,12 @@ public class PolicyMatcher {
         if (!matchesEmployment(item, request.requestedWorkStatus(), checkReasons)) {
             return PolicyMatchResult.excluded();
         }
-        addEducationCheck(item, request.requestedEducationStatus(), checkReasons);
+        if (!matchesEducation(item, request, checkReasons)) {
+            return PolicyMatchResult.excluded();
+        }
+        if (PolicyInstitutionClassifier.isUniversitySpecific(item)) {
+            checkReasons.add("특정 대학 운영 프로그램으로 이용 가능 대상을 확인해야 합니다.");
+        }
         if (!matchesIncome(item, request.incomeRange(), checkReasons)) {
             return PolicyMatchResult.excluded();
         }
@@ -98,14 +103,23 @@ public class PolicyMatcher {
         };
     }
 
-    private void addEducationCheck(
+    private boolean matchesEducation(
             YouthPolicyItem item,
-            String educationStatus,
+            PolicySearchRequest request,
             List<String> checkReasons
     ) {
-        if (educationStatus != null && !isBlank(item.schoolCd())) {
-            checkReasons.add("재학·학력 조건을 공고문에서 확인해야 합니다.");
-        }
+        return switch (PolicyEducationClassifier.classify(
+                item.schoolCd(),
+                request.educationLevel(),
+                request.requestedEnrollmentStatus()
+        )) {
+            case NOT_REQUESTED, UNRESTRICTED, MATCHED -> true;
+            case MISMATCHED -> false;
+            case UNKNOWN -> {
+                checkReasons.add("교육 단계·학적 조건을 공고문에서 확인해야 합니다.");
+                yield true;
+            }
+        };
     }
 
     private boolean matchesIncome(
