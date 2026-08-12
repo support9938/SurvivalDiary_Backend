@@ -52,12 +52,19 @@ public class Post {
     @Column(name = "view_count", nullable = false)
     private int viewCount;
 
+    @Column(name = "comments_disabled", nullable = false)
+    private boolean commentsDisabled;
+
+    @Column(name = "comments_hidden", nullable = false)
+    private boolean commentsHidden;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
     private Post(User user, String category, String title, String content,
-                 String hashtags, String imageUrls, String imageAlignment) {
+                 String hashtags, String imageUrls, String imageAlignment,
+                 boolean commentsDisabled, boolean commentsHidden) {
         this.user = user;
         this.category = category;
         this.title = title;
@@ -65,6 +72,8 @@ public class Post {
         this.hashtags = hashtags;
         this.imageUrls = imageUrls;
         this.imageAlignment = imageAlignment == null ? "center" : imageAlignment;
+        this.commentsDisabled = commentsDisabled;
+        this.commentsHidden = commentsHidden;
     }
 
     @PrePersist
@@ -73,12 +82,15 @@ public class Post {
     }
 
     public void update(String category, String title, String content, String hashtags,
-                       String imageUrls, String imageAlignment) {
+                       String imageUrls, String imageAlignment,
+                       boolean commentsDisabled, boolean commentsHidden) {
         this.category = category;
         this.title = title;
         this.content = content;
         this.hashtags = hashtags;
         this.imageUrls = imageUrls;
         this.imageAlignment = imageAlignment == null ? "center" : imageAlignment;
+        this.commentsDisabled = commentsDisabled;
+        this.commentsHidden = commentsHidden;
     }
 }

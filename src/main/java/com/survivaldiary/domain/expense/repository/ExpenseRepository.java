@@ -43,4 +43,19 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             @Param("startInclusive") LocalDateTime startInclusive,
             @Param("endExclusive") LocalDateTime endExclusive
     );
+
+    @Query("""
+            select e.categoryId
+            from Expense e
+            where e.userId = :userId
+              and e.spentAt >= :startInclusive
+              and e.spentAt < :endExclusive
+            group by e.categoryId
+            order by sum(e.amount) desc, e.categoryId asc
+            """)
+    List<Long> findCategoryIdsByMonthlySpendDescending(
+            @Param("userId") Long userId,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive
+    );
 }
