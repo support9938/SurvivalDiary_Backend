@@ -1,8 +1,11 @@
 package com.survivaldiary.domain.user.service;
 
 import com.survivaldiary.domain.user.dto.UpdateUserRequest;
+import com.survivaldiary.domain.user.dto.UpdateDefaultResidenceRequest;
 import com.survivaldiary.domain.user.dto.UserResponse;
 import com.survivaldiary.domain.user.entity.User;
+import com.survivaldiary.domain.user.entity.UserLocation;
+import com.survivaldiary.domain.user.repository.UserLocationRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
@@ -16,12 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserLocationRepository userLocationRepository;
     private final ProfileImageStorage profileImageStorage;
 
     @Transactional(readOnly = true)
     public UserResponse getMe(Long userId) {
         User user = findUser(userId);
-        return UserResponse.from(user);
+        return responseFor(user);
     }
 
     @Transactional
@@ -35,7 +39,7 @@ public class UserService {
                 normalize(request.region()),
                 normalize(request.bio())
         );
-        return UserResponse.from(user);
+        return responseFor(user);
     }
 
     @Transactional
@@ -45,19 +49,32 @@ public class UserService {
         String imageUrl = profileImageStorage.store(image);
         user.updateProfileImageUrl(imageUrl);
         profileImageStorage.delete(previousImageUrl);
-        return UserResponse.from(user);
+        return responseFor(user);
     }
 
     @Transactional
     public UserResponse deleteProfileImage(Long userId) {
         User user = findUser(userId);
         if (user.getProfileImageUrl() == null) {
-            return UserResponse.from(user);
+            return responseFor(user);
         }
         String previousImageUrl = user.getProfileImageUrl();
         user.updateProfileImageUrl(null);
         profileImageStorage.delete(previousImageUrl);
-        return UserResponse.from(user);
+        return responseFor(user);
+    }
+
+    @Transactional
+    public UserResponse updateDefaultResidence(Long userId, UpdateDefaultResidenceRequest request) {
+        User user = findUser(userId);
+        userLocationRepository.deleteByUserId(userId);
+        UserLocation residence = userLocationRepository.save(new UserLocation(
+                userId,
+                request.address().trim(),
+                request.latitude(),
+                request.longitude()
+        ));
+        return UserResponse.from(user, residence);
     }
 
     private User findUser(Long userId) {
@@ -67,5 +84,12 @@ public class UserService {
 
     private String normalize(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private UserResponse responseFor(User user) {
+        return UserResponse.from(
+                user,
+                userLocationRepository.findFirstByUserIdOrderByCreatedAtDesc(user.getId()).orElse(null)
+        );
     }
 }

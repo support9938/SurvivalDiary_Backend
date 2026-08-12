@@ -4,6 +4,7 @@ import com.survivaldiary.domain.map.client.RealEstateRentClient;
 import com.survivaldiary.domain.map.client.NaverGeocodingClient;
 import com.survivaldiary.domain.map.dto.HousingRentDealRequest;
 import com.survivaldiary.domain.map.dto.HousingRentDealResponse;
+import com.survivaldiary.domain.map.dto.MapViewportBounds;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -58,10 +59,68 @@ class HousingRentDealServiceTest {
         verify(client).fetchOfficetelDeals("11680", "202607");
     }
 
+    @Test
+    void 지도_경계_요청은_경계_필터를_limit보다_먼저_적용한다() {
+        RealEstateRentClient client = mock(RealEstateRentClient.class);
+        NaverGeocodingClient geocodingClient = mock(NaverGeocodingClient.class);
+        HousingRentDealService service = new HousingRentDealService(client, geocodingClient);
+        HousingRentDealResponse latestOutside = deal(
+                "outside",
+                "단독/다가구",
+                "역삼동",
+                "1-1",
+                LocalDate.of(2026, 8, 2)
+        );
+        HousingRentDealResponse olderInside = deal(
+                "inside",
+                "단독/다가구",
+                "역삼동",
+                "2-2",
+                LocalDate.of(2026, 8, 1)
+        );
+        when(client.fetchSingleFamilyDeals("11680", "202608"))
+                .thenReturn(List.of(latestOutside, olderInside));
+        when(client.fetchOfficetelDeals("11680", "202608"))
+                .thenReturn(List.of());
+        when(geocodingClient.findCoordinates("서울특별시 강남구 역삼동 1-1"))
+                .thenReturn(Optional.of(
+                        new NaverGeocodingClient.Coordinates(37.70, 127.20)
+                ));
+        when(geocodingClient.findCoordinates("서울특별시 강남구 역삼동 2-2"))
+                .thenReturn(Optional.of(
+                        new NaverGeocodingClient.Coordinates(37.50, 127.00)
+                ));
+
+        var result = service.findDeals(
+                new HousingRentDealRequest(
+                        "11680",
+                        "202608",
+                        1,
+                        null,
+                        "서울특별시 강남구",
+                        1
+                ),
+                new MapViewportBounds(37.49, 126.99, 37.51, 127.01)
+        );
+
+        assertThat(result).extracting(HousingRentDealResponse::id)
+                .containsExactly("inside");
+    }
+
     private HousingRentDealResponse deal(
             String id,
             String propertyType,
             String neighborhood,
+            LocalDate contractDate
+    ) {
+        return deal(id, propertyType, neighborhood, "123-*", contractDate);
+    }
+
+    private HousingRentDealResponse deal(
+            String id,
+            String propertyType,
+            String neighborhood,
+            String lotNumber,
             LocalDate contractDate
     ) {
         return new HousingRentDealResponse(
@@ -75,7 +134,7 @@ class HousingRentDealServiceTest {
                 new BigDecimal("29.8"),
                 3,
                 neighborhood,
-                "123-*",
+                lotNumber,
                 2020,
                 "2026.08~2028.07",
                 "신규",

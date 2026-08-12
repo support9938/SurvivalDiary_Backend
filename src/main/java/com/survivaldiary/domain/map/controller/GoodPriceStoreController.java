@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.map.controller;
 
 import com.survivaldiary.domain.map.dto.GoodPriceStoreResponse;
+import com.survivaldiary.domain.map.dto.MapViewportBounds;
 import com.survivaldiary.domain.map.service.GoodPriceStoreService;
 import com.survivaldiary.global.common.ApiResponse;
 import com.survivaldiary.global.common.PageResponse;
@@ -31,7 +32,11 @@ public class GoodPriceStoreController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String province,
             @RequestParam(required = false) String district,
-            @RequestParam(defaultValue = "default") String sort
+            @RequestParam(defaultValue = "default") String sort,
+            @RequestParam(required = false) Double southWestLat,
+            @RequestParam(required = false) Double southWestLng,
+            @RequestParam(required = false) Double northEastLat,
+            @RequestParam(required = false) Double northEastLng
     ) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -41,7 +46,13 @@ public class GoodPriceStoreController {
                                 size,
                                 province,
                                 district,
-                                sort
+                                sort,
+                                new MapViewportBounds(
+                                        southWestLat,
+                                        southWestLng,
+                                        northEastLat,
+                                        northEastLng
+                                )
                         )
                 ));
     }

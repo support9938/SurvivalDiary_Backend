@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.user.controller;
 
 import com.survivaldiary.domain.user.dto.UpdateUserRequest;
+import com.survivaldiary.domain.user.dto.UpdateDefaultResidenceRequest;
 import com.survivaldiary.domain.user.dto.UserResponse;
 import com.survivaldiary.domain.user.service.UserService;
 import com.survivaldiary.global.common.ApiResponse;
@@ -48,6 +49,14 @@ public class UserController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(userService.updateMe(userId, request)));
+    }
+
+    @Operation(summary = "Set the default residence used to open the savings map")
+    @PatchMapping("/me/default-residence")
+    public ResponseEntity<ApiResponse<UserResponse>> updateDefaultResidence(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateDefaultResidenceRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.updateDefaultResidence(userId, request)));
     }
 
     @Operation(summary = "프로필 사진 등록 또는 수정")

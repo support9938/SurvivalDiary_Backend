@@ -69,7 +69,9 @@ good-price:
 public-facility:
   provider:
     base-url: https://api.data.go.kr
-    api-key: ${PUBLIC_DATA_API_KEY:}
+    # Prefer the dedicated key, then reuse the already configured public-data key.
+    # The legacy directions key remains the last fallback for compatibility.
+    api-key: ${PUBLIC_DATA_API_KEY:${real-estate-rent.provider.api-key:${public-facility.directions.app-key:}}}
     connect-timeout: 2s
     read-timeout: 10s
     page-size: 1000

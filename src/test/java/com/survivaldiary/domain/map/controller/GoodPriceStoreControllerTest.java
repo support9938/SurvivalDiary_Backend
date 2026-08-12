@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.map.controller;
 
 import com.survivaldiary.domain.map.dto.GoodPriceStoreResponse;
+import com.survivaldiary.domain.map.dto.MapViewportBounds;
 import com.survivaldiary.domain.map.service.GoodPriceStoreService;
 import com.survivaldiary.global.common.PageResponse;
 import com.survivaldiary.global.exception.GlobalExceptionHandler;
@@ -52,13 +53,24 @@ class GoodPriceStoreControllerTest {
                 37.5796,
                 126.9990
         );
-        when(service.findStores(0, 20, "서울특별시", "종로구", "price"))
+        when(service.findStores(
+                0,
+                20,
+                "서울특별시",
+                "종로구",
+                "price",
+                new MapViewportBounds(37.5, 126.9, 37.6, 127.1)
+        ))
                 .thenReturn(new PageResponse<>(List.of(store), 0, 20, 1, 1, false));
 
         mockMvc.perform(get("/api/map/good-price-stores")
                         .param("province", "서울특별시")
                         .param("district", "종로구")
-                        .param("sort", "price"))
+                        .param("sort", "price")
+                        .param("southWestLat", "37.5")
+                        .param("southWestLng", "126.9")
+                        .param("northEastLat", "37.6")
+                        .param("northEastLng", "127.1"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.success").value(true))

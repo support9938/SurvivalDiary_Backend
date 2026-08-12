@@ -1,6 +1,7 @@
 package com.survivaldiary.domain.user.dto;
 
 import com.survivaldiary.domain.user.entity.User;
+import com.survivaldiary.domain.user.entity.UserLocation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -17,11 +18,14 @@ public record UserResponse(
         String region,
         String signupInterest,
         String bio,
+        String defaultResidenceAddress,
+        Double defaultResidenceLatitude,
+        Double defaultResidenceLongitude,
         User.Role role,
         LocalDateTime createdAt
 ) {
 
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user, UserLocation defaultResidence) {
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
@@ -35,6 +39,9 @@ public record UserResponse(
                 user.getRegion(),
                 user.getSignupInterest(),
                 user.getBio(),
+                defaultResidence == null ? null : defaultResidence.getAddress(),
+                defaultResidence == null ? null : defaultResidence.getLatitude().doubleValue(),
+                defaultResidence == null ? null : defaultResidence.getLongitude().doubleValue(),
                 user.getRole(),
                 user.getCreatedAt()
         );

@@ -60,7 +60,8 @@ class PublicFacilityClientTest {
                                         "pchrgUseYn": "N",
                                         "rdnmadr": "서울특별시 종로구 세종대로 1",
                                         "latitude": "37.5700",
-                                        "longitude": "126.9800"
+                                        "longitude": "126.9800",
+                                        "insttCode": "1111000"
                                       }],
                                       "pageNo": 1,
                                       "numOfRows": 1000,
@@ -78,6 +79,7 @@ class PublicFacilityClientTest {
         assertThat(page.items()).hasSize(1);
         assertThat(page.items().get(0).facilityName()).isEqualTo("세미나실");
         assertThat(page.items().get(0).latitude()).isEqualTo(37.5700);
+        assertThat(page.items().get(0).institutionCode()).isEqualTo("1111000");
         server.verify();
     }
 
