@@ -215,6 +215,54 @@ class PolicyServiceTest {
     }
 
     @Test
+    void 필터_추천도_세_페이지를_검사해_뒤쪽의_일치_정책을_초기_응답에_포함한다() {
+        JsonNode firstRoot = mock(JsonNode.class);
+        JsonNode secondRoot = mock(JsonNode.class);
+        JsonNode thirdRoot = mock(JsonNode.class);
+        List<YouthPolicyItem> firstPage = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(index -> item("FIRST-" + index))
+                .toList();
+        List<YouthPolicyItem> secondPage = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(index -> item("SECOND-" + index))
+                .toList();
+        YouthPolicyItem matchedItem = item("FILTERED-MATCH");
+        PolicyMatchResult matchResult = PolicyMatchResult.matched();
+        PolicySummary matchedSummary = summary("FILTERED-MATCH");
+
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 1)))
+                .thenReturn(firstRoot);
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 2)))
+                .thenReturn(secondRoot);
+        when(client.search(argThat(request -> request != null && request.pageNumber() == 3)))
+                .thenReturn(thirdRoot);
+        when(parser.parseItems(firstRoot)).thenReturn(firstPage);
+        when(parser.parseItems(secondRoot)).thenReturn(secondPage);
+        when(parser.parseItems(thirdRoot)).thenReturn(List.of(matchedItem));
+        when(matcher.match(any(YouthPolicyItem.class), any(PolicySearchRequest.class)))
+                .thenReturn(PolicyMatchResult.excluded());
+        when(matcher.match(eq(matchedItem), any(PolicySearchRequest.class)))
+                .thenReturn(matchResult);
+        when(recommendationEvaluator.evaluate(
+                eq(matchedItem),
+                any(PolicySearchRequest.class),
+                eq(matchResult)
+        )).thenReturn(recommended(300));
+        when(mapper.toSummary(
+                eq(matchedItem),
+                eq(matchResult),
+                any(PolicyRecommendationResult.class)
+        )).thenReturn(matchedSummary);
+
+        PolicySearchResponse response = service.recommend(request(20, "11680"));
+
+        assertThat(response.items()).containsExactly(matchedSummary);
+        assertThat(response.checkedProviderPages()).isEqualTo(3);
+        assertThat(response.partialResult()).isFalse();
+        assertThat(response.nextPage()).isNull();
+        verify(client, times(3)).search(any(YouthPolicySearchRequest.class));
+    }
+
+    @Test
     void 기본_추천은_세_페이지_후보를_비교해_뒤쪽의_맞춤_정책을_먼저_반환한다() {
         JsonNode firstRoot = mock(JsonNode.class);
         JsonNode secondRoot = mock(JsonNode.class);
