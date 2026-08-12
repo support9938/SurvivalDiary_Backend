@@ -26,7 +26,7 @@ public class DirectionsController {
         this.directionsService = directionsService;
     }
 
-    @Operation(summary = "현재 위치에서 목적지까지 보행자 추천 경로 조회")
+    @Operation(summary = "현재 위치에서 목적지까지 이동 수단별 추천 경로 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<DirectionsResponse>> findOptimalRoute(
             @ParameterObject @Valid @ModelAttribute DirectionsRequest request

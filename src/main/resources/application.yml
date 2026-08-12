@@ -75,6 +75,15 @@ public-facility:
     page-size: 1000
     cache-ttl: 24h
 
+public-parking:
+  provider:
+    base-url: https://api.data.go.kr
+    api-key: ${PUBLIC_DATA_API_KEY:}
+    connect-timeout: 2s
+    read-timeout: 15s
+    page-size: 1000
+    cache-ttl: 24h
+
 real-estate-rent:
   provider:
     base-url: https://apis.data.go.kr/1613000
