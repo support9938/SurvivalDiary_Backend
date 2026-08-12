@@ -29,6 +29,15 @@ jwt:
   access-token-validity-ms: 3600000      # 액세스 토큰 1시간
   refresh-token-validity-ms: 1209600000  # 리프레시 토큰 2주
 
+oauth:
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY}
+    client-secret: ${KAKAO_CLIENT_SECRET}
+
+  naver:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+
 policy:
   provider:
     base-url: https://www.youthcenter.go.kr
@@ -36,6 +45,18 @@ policy:
     api-key: ${YOUTH_POLICY_API_KEY:}
     connect-timeout: 2s
     read-timeout: 5s
+
+news:
+  provider:
+    base-url: https://naverapihub.apigw.ntruss.com
+    # NAVER API HUB 뉴스 검색 인증정보는 네이버 로그인 키와 분리해 환경변수로 주입한다.
+    client-id: ${NAVER_API_HUB_CLIENT_ID:}
+    client-secret: ${NAVER_API_HUB_CLIENT_SECRET:}
+    connect-timeout: 5s
+    read-timeout: 10s
+    cache-ttl: 1h
+    display: 50
+    pages-per-topic: 3
 
 
 good-price:

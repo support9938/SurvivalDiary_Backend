@@ -10,6 +10,8 @@ import com.survivaldiary.domain.user.dto.WebTokenResponse;
 import com.survivaldiary.domain.user.entity.SocialAccount;
 import com.survivaldiary.domain.user.service.AuthService;
 import com.survivaldiary.global.common.ApiResponse;
+import com.survivaldiary.global.exception.BusinessException;
+import com.survivaldiary.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -97,7 +99,10 @@ public class AuthController {
 
     @PostMapping("/web/token/refresh")
     public ResponseEntity<ApiResponse<WebTokenResponse>> refreshWebToken(
-            @CookieValue(name = REFRESH_COOKIE) String refreshToken) {
+            @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
         return webLoginResponse(authService.refresh(new RefreshTokenRequest(refreshToken)));
     }
 

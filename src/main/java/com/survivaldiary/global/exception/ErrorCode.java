@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
  * 전역 에러 코드.
  *
  * 코드 체계: {도메인 접두사}{3자리 번호}
- *   C: 공통 / U: 사용자·인증 / P: 게시글 / E: 지출·예산 / Y: 정책 / L: 장소
+ *   C: 공통 / U: 사용자·인증 / P: 게시글 / E: 지출·예산 / Y: 정책 / L: 장소 / N: 뉴스
  * 도메인 작업 시 담당자가 본인 접두사 아래 코드를 추가한다.
  */
 @Getter
@@ -47,6 +47,18 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "Y005",
             "맞춤 정책 추천을 위한 기본 조건을 먼저 저장해 주세요."
+    ),
+
+    // 뉴스
+    NEWS_PROVIDER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "N001",
+            "맞춤 뉴스를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
+    ),
+    NEWS_PROVIDER_BAD_RESPONSE(
+            HttpStatus.BAD_GATEWAY,
+            "N002",
+            "뉴스 제공처 응답을 처리할 수 없습니다."
     ),
 
     // 장소 / 지도
