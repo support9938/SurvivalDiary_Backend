@@ -46,11 +46,19 @@ class PolicyRecommendationEvaluatorTest {
     }
 
     @Test
-    void 확인할_자격_조건이_있어도_관련성이_높으면_추천_근거를_유지한다() {
+    void 공식_학력_코드가_교육_단계와_일치하면_추천_근거를_유지한다() {
         PolicyRecommendationResult result = evaluator.evaluate(
-                item("교육", "청년 교육 지원", "대학생,교육", "11680"),
-                request(Set.of("EDUCATION"), null, "STUDENT"),
-                PolicyMatchResult.checkRequired(List.of("재학 조건을 확인해야 합니다."))
+                item(
+                        "교육",
+                        "청년 교육 지원",
+                        "대학생,교육",
+                        "11680",
+                        "0013010",
+                        "0049005",
+                        "운영 기관"
+                ),
+                educationRequest(Set.of("EDUCATION"), "UNIVERSITY_4_YEAR", "ENROLLED"),
+                PolicyMatchResult.matched()
         );
 
         assertThat(result.status()).isEqualTo(PolicyRecommendationStatus.RECOMMENDED);
@@ -61,6 +69,29 @@ class PolicyRecommendationEvaluatorTest {
                         PolicyMatchSignal.EDUCATION_STATUS,
                         PolicyMatchSignal.INTEREST_EDUCATION
                 );
+    }
+
+    @Test
+    void 특정_대학_운영_프로그램은_관심_주제와_일치해도_확인_필요로_내린다() {
+        PolicyRecommendationResult result = evaluator.evaluate(
+                item(
+                        "일자리",
+                        "조선대학교 대학일자리플러스센터",
+                        "대학생,취업",
+                        "전국",
+                        "0013010",
+                        "0049005",
+                        "조선대학교 대학일자리플러스센터"
+                ),
+                educationRequest(Set.of("EMPLOYMENT"), "UNIVERSITY_4_YEAR", "ENROLLED"),
+                PolicyMatchResult.checkRequired(
+                        List.of("특정 대학 운영 프로그램으로 이용 가능 대상을 확인해야 합니다.")
+                )
+        );
+
+        assertThat(result.status()).isEqualTo(PolicyRecommendationStatus.CHECK_REQUIRED);
+        assertThat(result.reasons())
+                .contains("특정 대학 운영 프로그램으로 이용 가능 대상을 확인해야 합니다.");
     }
 
     @Test
@@ -116,6 +147,30 @@ class PolicyRecommendationEvaluatorTest {
         return request(interests, jobSeeking, educationStatus, "UNEMPLOYED");
     }
 
+    private PolicySearchRequest educationRequest(
+            Set<String> interests,
+            String educationLevel,
+            String enrollmentStatus
+    ) {
+        return new PolicySearchRequest(
+                27,
+                "11",
+                "11680",
+                null,
+                null,
+                null,
+                null,
+                1,
+                20,
+                "UNEMPLOYED",
+                null,
+                null,
+                interests,
+                educationLevel,
+                enrollmentStatus
+        );
+    }
+
     private PolicySearchRequest request(
             Set<String> interests,
             Boolean jobSeeking,
@@ -155,6 +210,18 @@ class PolicyRecommendationEvaluatorTest {
             String zipCode,
             String jobCode
     ) {
+        return item(largeCategory, title, keywords, zipCode, jobCode, null, "운영 기관");
+    }
+
+    private YouthPolicyItem item(
+            String largeCategory,
+            String title,
+            String keywords,
+            String zipCode,
+            String jobCode,
+            String schoolCode,
+            String operatingInstitution
+    ) {
         return new YouthPolicyItem(
                 "POLICY-1",
                 title,
@@ -168,7 +235,7 @@ class PolicyRecommendationEvaluatorTest {
                 "34",
                 "Y",
                 jobCode,
-                null,
+                schoolCode,
                 "0043001",
                 null,
                 null,
@@ -181,7 +248,7 @@ class PolicyRecommendationEvaluatorTest {
                 null,
                 null,
                 "주관 기관",
-                "운영 기관",
+                operatingInstitution,
                 null
         );
     }

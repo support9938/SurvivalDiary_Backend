@@ -51,9 +51,12 @@ public class PolicyRecommendationEvaluator {
             personalizationScore += 35;
         }
 
-        if (matchesEducationStatus(text, request.requestedEducationStatus())) {
-            positiveReasons.add("%s 교육 상태와 관련된 정책이에요."
-                    .formatted(educationStatusLabel(request.requestedEducationStatus())));
+        if (PolicyEducationClassifier.classify(
+                item.schoolCd(),
+                request.educationLevel(),
+                request.requestedEnrollmentStatus()
+        ) == PolicyEducationClassifier.EducationMatch.MATCHED) {
+            positiveReasons.add("입력한 교육 단계·학적 상태와 일치해요.");
             signals.add(PolicyMatchSignal.EDUCATION_STATUS);
             personalizationScore += 30;
         }
@@ -79,6 +82,19 @@ public class PolicyRecommendationEvaluator {
             positiveReasons.add("만 %d세 연령 조건과 일치해요.".formatted(request.age()));
             signals.add(PolicyMatchSignal.AGE);
             personalizationScore += 8;
+        }
+
+        if (PolicyInstitutionClassifier.isUniversitySpecific(item)) {
+            List<String> reasons = new ArrayList<>(matchResult.reasons());
+            positiveReasons.stream()
+                    .filter(reason -> reasons.size() < 3)
+                    .forEach(reasons::add);
+            return new PolicyRecommendationResult(
+                    PolicyRecommendationStatus.CHECK_REQUIRED,
+                    reasons,
+                    List.copyOf(signals),
+                    CHECK_REQUIRED_PRIORITY + personalizationScore
+            );
         }
 
         if (personalizationScore >= RECOMMENDATION_THRESHOLD) {
@@ -181,19 +197,6 @@ public class PolicyRecommendationEvaluator {
         return minAge != null && maxAge != null && age >= minAge && age <= maxAge;
     }
 
-    private boolean matchesEducationStatus(String text, String educationStatus) {
-        if (educationStatus == null) {
-            return false;
-        }
-        return switch (educationStatus) {
-            case "STUDENT" -> containsAny(text, "재학생", "재학", "대학생", "학생");
-            case "ON_LEAVE" -> containsAny(text, "휴학생", "휴학");
-            case "GRADUATED" -> containsAny(text, "졸업생", "졸업자", "졸업");
-            case "NOT_STUDENT" -> containsAny(text, "비진학", "학교 밖", "미진학");
-            default -> false;
-        };
-    }
-
     private String workStatusLabel(String workStatus) {
         return switch (workStatus) {
             case "EMPLOYED" -> "재직자";
@@ -205,16 +208,6 @@ public class PolicyRecommendationEvaluator {
             case "SHORT_TERM_WORKER" -> "단기근로자";
             case "FARMER" -> "영농종사자";
             default -> "현재 근로 상태";
-        };
-    }
-
-    private String educationStatusLabel(String educationStatus) {
-        return switch (educationStatus) {
-            case "STUDENT" -> "재학 중인";
-            case "ON_LEAVE" -> "휴학 중인";
-            case "GRADUATED" -> "졸업한";
-            case "NOT_STUDENT" -> "학생이 아닌";
-            default -> "현재";
         };
     }
 

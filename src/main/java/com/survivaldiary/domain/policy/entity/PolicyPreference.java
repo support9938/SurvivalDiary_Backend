@@ -45,6 +45,9 @@ public class PolicyPreference {
     @Column(name = "education_status", length = 30)
     private String educationStatus;
 
+    @Column(name = "education_level", length = 30)
+    private String educationLevel;
+
     @Column(name = "employment_status", length = 30)
     private String employmentStatus;
 
@@ -79,6 +82,7 @@ public class PolicyPreference {
             String workStatus,
             Boolean jobSeeking,
             String educationStatus,
+            String educationLevel,
             Set<String> interests
     ) {
         this.userId = userId;
@@ -92,6 +96,37 @@ public class PolicyPreference {
                 workStatus,
                 jobSeeking,
                 educationStatus,
+                educationLevel,
+                interests
+        );
+    }
+
+    public static PolicyPreference create(
+            Long userId,
+            Integer age,
+            String regionCode,
+            String districtCode,
+            String employmentStatus,
+            String incomeRange,
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            String educationLevel,
+            Set<String> interests
+    ) {
+        return new PolicyPreference(
+                userId,
+                age,
+                regionCode,
+                districtCode,
+                employmentStatus,
+                incomeRange,
+                category,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                educationLevel,
                 interests
         );
     }
@@ -109,7 +144,7 @@ public class PolicyPreference {
             String educationStatus,
             Set<String> interests
     ) {
-        return new PolicyPreference(
+        return create(
                 userId,
                 age,
                 regionCode,
@@ -120,6 +155,7 @@ public class PolicyPreference {
                 workStatus,
                 jobSeeking,
                 educationStatus,
+                null,
                 interests
         );
     }
@@ -134,6 +170,7 @@ public class PolicyPreference {
             String workStatus,
             Boolean jobSeeking,
             String educationStatus,
+            String educationLevel,
             Set<String> interests
     ) {
         this.age = age;
@@ -145,8 +182,36 @@ public class PolicyPreference {
         this.workStatus = workStatus;
         this.jobSeeking = jobSeeking;
         this.educationStatus = educationStatus;
+        this.educationLevel = educationLevel;
         this.interests.clear();
         this.interests.addAll(interests == null ? Set.of() : interests);
+    }
+
+    public void update(
+            Integer age,
+            String regionCode,
+            String districtCode,
+            String employmentStatus,
+            String incomeRange,
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
+    ) {
+        update(
+                age,
+                regionCode,
+                districtCode,
+                employmentStatus,
+                incomeRange,
+                category,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                null,
+                interests
+        );
     }
 
     @PrePersist

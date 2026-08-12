@@ -56,7 +56,8 @@ public class PolicyPreferenceService {
                             expandedProfile ? null : request.category(),
                             request.resolvedWorkStatus(),
                             request.resolvedJobSeeking(),
-                            request.resolvedEducationStatus(),
+                            request.resolvedEnrollmentStatus(),
+                            request.educationLevel(),
                             request.resolvedInterests()
                     );
                     return existing;
@@ -73,7 +74,8 @@ public class PolicyPreferenceService {
                         request.usesExpandedProfile() ? null : request.category(),
                         request.resolvedWorkStatus(),
                         request.resolvedJobSeeking(),
-                        request.resolvedEducationStatus(),
+                        request.resolvedEnrollmentStatus(),
+                        request.educationLevel(),
                         request.resolvedInterests()
                 ));
 
@@ -115,7 +117,7 @@ public class PolicyPreferenceService {
                     : "UNEMPLOYED";
         }
         if (workStatus == null
-                && "STUDENT".equals(request.resolvedEducationStatus())) {
+                && "ENROLLED".equals(request.resolvedEnrollmentStatus())) {
             return "STUDENT";
         }
         return null;

@@ -60,6 +60,8 @@ class PolicyRecommendationServiceTest {
                         && "월세".equals(request.keyword())
                         && request.requestedPage() == 2
                         && Boolean.TRUE.equals(request.jobSeeking())
+                        && "UNIVERSITY_4_YEAR".equals(request.educationLevel())
+                        && "ENROLLED".equals(request.enrollmentStatus())
         ), eq(Set.of("HIDDEN-1")));
     }
 
@@ -90,7 +92,9 @@ class PolicyRecommendationServiceTest {
                 "UNEMPLOYED",
                 true,
                 null,
-                Set.of()
+                Set.of(),
+                "UNIVERSITY_4_YEAR",
+                "ENROLLED"
         );
     }
 }

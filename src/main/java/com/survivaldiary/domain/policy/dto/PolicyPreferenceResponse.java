@@ -17,8 +17,40 @@ public record PolicyPreferenceResponse(
         @Schema(description = "근로 상태. 미입력이면 null") String workStatus,
         @Schema(description = "구직 여부. 미입력이면 null") Boolean jobSeeking,
         @Schema(description = "교육 상태. 미입력이면 null") String educationStatus,
-        @Schema(description = "복수 선택 관심 주제") Set<String> interests
+        @Schema(description = "복수 선택 관심 주제") Set<String> interests,
+        @Schema(description = "교육 단계. 미입력이면 null") String educationLevel,
+        @Schema(description = "현재 학적 상태. 미입력이면 null") String enrollmentStatus
 ) {
+    public PolicyPreferenceResponse(
+            boolean saved,
+            Integer age,
+            String regionCode,
+            String districtCode,
+            String employmentStatus,
+            String incomeRange,
+            String category,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
+    ) {
+        this(
+                saved,
+                age,
+                regionCode,
+                districtCode,
+                employmentStatus,
+                incomeRange,
+                category,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                interests,
+                null,
+                null
+        );
+    }
+
     public static PolicyPreferenceResponse empty(Integer age) {
         return new PolicyPreferenceResponse(
                 false,
@@ -31,7 +63,9 @@ public record PolicyPreferenceResponse(
                 null,
                 null,
                 null,
-                Set.of()
+                Set.of(),
+                null,
+                null
         );
     }
 
@@ -39,6 +73,7 @@ public record PolicyPreferenceResponse(
             PolicyPreference preference,
             Integer age
     ) {
+        String enrollmentStatus = normalizedEnrollmentStatus(preference.getEducationStatus());
         return new PolicyPreferenceResponse(
                 true,
                 age,
@@ -49,8 +84,34 @@ public record PolicyPreferenceResponse(
                 preference.getCategory(),
                 preference.getWorkStatus(),
                 preference.getJobSeeking(),
-                preference.getEducationStatus(),
-                Set.copyOf(preference.getInterests())
+                legacyEducationStatus(enrollmentStatus),
+                Set.copyOf(preference.getInterests()),
+                preference.getEducationLevel(),
+                enrollmentStatus
         );
+    }
+
+    private static String normalizedEnrollmentStatus(String storedStatus) {
+        if (storedStatus == null) {
+            return null;
+        }
+        return switch (storedStatus) {
+            case "STUDENT" -> "ENROLLED";
+            case "NOT_STUDENT", "OTHER" -> "NOT_APPLICABLE";
+            default -> storedStatus;
+        };
+    }
+
+    private static String legacyEducationStatus(String enrollmentStatus) {
+        if (enrollmentStatus == null) {
+            return null;
+        }
+        return switch (enrollmentStatus) {
+            case "ENROLLED", "EXPECTED_GRADUATION" -> "STUDENT";
+            case "ON_LEAVE" -> "ON_LEAVE";
+            case "GRADUATED" -> "GRADUATED";
+            case "DROPPED_OUT", "NOT_APPLICABLE" -> "NOT_STUDENT";
+            default -> null;
+        };
     }
 }

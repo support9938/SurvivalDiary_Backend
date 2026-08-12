@@ -60,6 +60,8 @@ class PolicyPreferenceServiceTest {
         assertThat(response.regionCode()).isEqualTo("11");
         assertThat(response.districtCode()).isEqualTo("11680");
         assertThat(response.incomeRange()).isNull();
+        assertThat(response.educationLevel()).isEqualTo("UNIVERSITY_4_YEAR");
+        assertThat(response.enrollmentStatus()).isEqualTo("ENROLLED");
         verify(preferenceRepository).save(any(PolicyPreference.class));
     }
 
@@ -176,7 +178,9 @@ class PolicyPreferenceServiceTest {
                 "UNEMPLOYED",
                 true,
                 null,
-                Set.of("ASSET_BUILDING")
+                Set.of("ASSET_BUILDING"),
+                "UNIVERSITY_4_YEAR",
+                "ENROLLED"
         );
     }
 }

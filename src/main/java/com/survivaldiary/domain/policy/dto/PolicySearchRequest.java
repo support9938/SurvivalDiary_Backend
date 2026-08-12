@@ -95,7 +95,23 @@ public record PolicySearchRequest(
                 regexp = "EMPLOYMENT|HOUSING|EDUCATION|WELFARE_CULTURE|"
                         + "PARTICIPATION_RIGHTS|ASSET_BUILDING|TRANSPORT",
                 message = "관심 주제 값이 올바르지 않습니다."
-        ) String> interests
+        ) String> interests,
+
+        @Schema(description = "교육 단계. 모르면 생략")
+        @Pattern(
+                regexp = "MIDDLE_SCHOOL_OR_LESS|HIGH_SCHOOL|COLLEGE_2_3_YEAR|"
+                        + "UNIVERSITY_4_YEAR|GRADUATE_SCHOOL|OTHER",
+                message = "교육 단계 값이 올바르지 않습니다."
+        )
+        String educationLevel,
+
+        @Schema(description = "현재 학적 상태. 모르면 생략")
+        @Pattern(
+                regexp = "ENROLLED|ON_LEAVE|EXPECTED_GRADUATION|GRADUATED|"
+                        + "DROPPED_OUT|NOT_APPLICABLE",
+                message = "현재 학적 상태 값이 올바르지 않습니다."
+        )
+        String enrollmentStatus
 ) {
 
     public PolicySearchRequest {
@@ -103,6 +119,40 @@ public record PolicySearchRequest(
         interests = interests == null
                 ? Set.of()
                 : Set.copyOf(new LinkedHashSet<>(interests));
+    }
+
+    public PolicySearchRequest(
+            Integer age,
+            String regionCode,
+            String districtCode,
+            String employmentStatus,
+            String incomeRange,
+            String category,
+            String keyword,
+            Integer page,
+            Integer size,
+            String workStatus,
+            Boolean jobSeeking,
+            String educationStatus,
+            Set<String> interests
+    ) {
+        this(
+                age,
+                regionCode,
+                districtCode,
+                employmentStatus,
+                incomeRange,
+                category,
+                keyword,
+                page,
+                size,
+                workStatus,
+                jobSeeking,
+                educationStatus,
+                interests,
+                null,
+                null
+        );
     }
 
     public int requestedSize() {
@@ -138,6 +188,23 @@ public record PolicySearchRequest(
             return educationStatus;
         }
         return "STUDENT".equals(employmentStatus) ? "STUDENT" : null;
+    }
+
+    public String requestedEnrollmentStatus() {
+        if (enrollmentStatus != null) {
+            return enrollmentStatus;
+        }
+        String legacyStatus = requestedEducationStatus();
+        if (legacyStatus == null) {
+            return null;
+        }
+        return switch (legacyStatus) {
+            case "STUDENT" -> "ENROLLED";
+            case "ON_LEAVE" -> "ON_LEAVE";
+            case "GRADUATED" -> "GRADUATED";
+            case "NOT_STUDENT", "OTHER" -> "NOT_APPLICABLE";
+            default -> null;
+        };
     }
 
     public int requestedPage() {

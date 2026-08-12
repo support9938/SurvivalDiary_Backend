@@ -85,7 +85,11 @@ erDiagram
 | age | INT | Y | | | 생년월일이 없는 사용자가 입력한 현재 만 나이 |
 | region_code | CHAR(2) | N | | | 법정동 시도 코드 앞 2자리 |
 | district_code | CHAR(5) | Y | | | 법정동 시군구 코드 앞 5자리, 시도 전체면 NULL |
-| employment_status | VARCHAR(30) | N | | | 취업 상태 코드 |
+| work_status | VARCHAR(30) | Y | | | 근로 상태 코드 |
+| job_seeking | TINYINT(1) | Y | | | 현재 구직 여부 |
+| education_status | VARCHAR(30) | Y | | | 현재 학적 상태 코드 |
+| education_level | VARCHAR(30) | Y | | | 교육 단계 코드 |
+| employment_status | VARCHAR(30) | Y | | | 이전 앱 호환용 취업 상태 코드 |
 | income_range | VARCHAR(30) | Y | | | 소득 구간, 무관이면 NULL |
 | category | VARCHAR(30) | Y | | | 정책 분야, 전체면 NULL |
 | created_at | DATETIME | N | | NOW | 최초 저장 시각 |
@@ -93,6 +97,8 @@ erDiagram
 
 `users.birth_date`가 있으면 계산한 만 나이를 우선 사용한다. 소셜 제공처가 생년월일을 제공하지
 않은 경우에만 이 테이블의 `age`를 대체값으로 사용하고, 조건 수정 시 최신 입력값으로 갱신한다.
+교육 조건은 `education_level`과 `education_status`를 함께 사용한다. 관심 주제는
+`user_policy_interests`에 사용자별 복수 행으로 저장한다.
 
 ### user_locations — 사용자 위치 설정
 
