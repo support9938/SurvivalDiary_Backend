@@ -45,6 +45,11 @@ policy:
     api-key: ${YOUTH_POLICY_API_KEY:}
     connect-timeout: 2s
     read-timeout: 5s
+    retry-count: ${YOUTH_POLICY_RETRY_COUNT:1}
+    retry-delay: ${YOUTH_POLICY_RETRY_DELAY:300ms}
+    cache-ttl: ${YOUTH_POLICY_CACHE_TTL:10m}
+    stale-cache-ttl: ${YOUTH_POLICY_STALE_CACHE_TTL:1h}
+    cache-max-entries: ${YOUTH_POLICY_CACHE_MAX_ENTRIES:128}
 
 news:
   provider:

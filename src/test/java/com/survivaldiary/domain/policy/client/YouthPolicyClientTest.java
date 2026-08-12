@@ -20,6 +20,7 @@ import tools.jackson.databind.JsonNode;
 
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,6 +40,8 @@ class YouthPolicyClientTest {
     void setUp() {
         properties = new YouthPolicyProperties();
         properties.setApiKey("test-api-key");
+        properties.setRetryCount(0);
+        properties.setRetryDelay(Duration.ZERO);
 
         RestClient.Builder builder = RestClient.builder()
                 .baseUrl("https://www.youthcenter.go.kr");
@@ -143,6 +146,51 @@ class YouthPolicyClientTest {
         );
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+        server.verify();
+    }
+
+    @Test
+    void 일시적_서버_오류는_한번_재시도해_성공한다() {
+        properties.setRetryCount(1);
+        server.expect(request -> {
+                })
+                .andRespond(withServerError());
+        server.expect(request -> {
+                })
+                .andRespond(withSuccess(
+                        "{\"data\":{\"items\":[]}}",
+                        MediaType.APPLICATION_JSON
+                ));
+
+        JsonNode response = client.search(defaultSearchRequest());
+
+        assertThat(response.path("data").path("items").isArray()).isTrue();
+        server.verify();
+    }
+
+    @Test
+    void 재시도까지_실패하면_최근_성공한_목록을_사용한다() throws Exception {
+        properties.setCacheTtl(Duration.ofMillis(1));
+        properties.setStaleCacheTtl(Duration.ofMinutes(1));
+        server.expect(request -> {
+                })
+                .andRespond(withSuccess(
+                        "{\"data\":{\"items\":[{\"plcyNo\":\"CACHED-1\"}]}}",
+                        MediaType.APPLICATION_JSON
+                ));
+        server.expect(request -> {
+                })
+                .andRespond(withServerError());
+
+        JsonNode initial = client.search(defaultSearchRequest());
+        Thread.sleep(5);
+
+        JsonNode fallback = client.search(defaultSearchRequest());
+
+        assertThat(initial.path("data").path("items").get(0).path("plcyNo").asText())
+                .isEqualTo("CACHED-1");
+        assertThat(fallback.path("data").path("items").get(0).path("plcyNo").asText())
+                .isEqualTo("CACHED-1");
         server.verify();
     }
 
