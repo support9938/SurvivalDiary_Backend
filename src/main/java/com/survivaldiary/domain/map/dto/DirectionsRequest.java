@@ -28,6 +28,26 @@ public record DirectionsRequest(
         @NotNull
         @DecimalMin("-180.0")
         @DecimalMax("180.0")
-        Double goalLongitude
+        Double goalLongitude,
+
+        @Schema(
+                description = "이동 수단. 생략하면 도보 경로를 조회합니다.",
+                example = "WALKING",
+                defaultValue = "WALKING",
+                allowableValues = {"WALKING", "DRIVING"}
+        )
+        DirectionsMode mode
 ) {
+    public DirectionsRequest(
+            Double startLatitude,
+            Double startLongitude,
+            Double goalLatitude,
+            Double goalLongitude
+    ) {
+        this(startLatitude, startLongitude, goalLatitude, goalLongitude, null);
+    }
+
+    public DirectionsMode resolvedMode() {
+        return mode == null ? DirectionsMode.WALKING : mode;
+    }
 }

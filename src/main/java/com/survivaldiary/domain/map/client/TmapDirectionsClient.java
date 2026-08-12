@@ -1,5 +1,6 @@
 package com.survivaldiary.domain.map.client;
 
+import com.survivaldiary.domain.map.dto.DirectionsMode;
 import com.survivaldiary.domain.map.dto.DirectionsRequest;
 import com.survivaldiary.domain.map.dto.DirectionsResponse;
 import com.survivaldiary.global.exception.BusinessException;
@@ -17,13 +18,15 @@ import tools.jackson.databind.JsonNode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class TmapDirectionsClient {
 
-    private static final String DIRECTIONS_PATH = "/tmap/routes/pedestrian";
+    private static final String WALKING_DIRECTIONS_PATH = "/tmap/routes/pedestrian";
+    private static final String DRIVING_DIRECTIONS_PATH = "/tmap/routes";
     private static final String APP_KEY_HEADER = "appKey";
     private static final String COORDINATE_TYPE = "WGS84GEO";
     private static final String SEARCH_OPTION_RECOMMENDED = "0";
@@ -45,15 +48,16 @@ public class TmapDirectionsClient {
         }
 
         try {
+            DirectionsMode mode = request.resolvedMode();
             JsonNode response = restClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path(DIRECTIONS_PATH)
+                            .path(directionsPath(mode))
                             .queryParam("version", "1")
                             .build())
                     .header(APP_KEY_HEADER, properties.getAppKey().trim())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(requestBody(request))
+                    .body(requestBody(request, mode))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (httpRequest, errorResponse) -> {
                         throw providerError(errorResponse.getStatusCode());
@@ -69,19 +73,32 @@ public class TmapDirectionsClient {
         }
     }
 
-    private Map<String, Object> requestBody(DirectionsRequest request) {
-        return Map.of(
-                "startX", request.startLongitude(),
-                "startY", request.startLatitude(),
-                "endX", request.goalLongitude(),
-                "endY", request.goalLatitude(),
-                "startName", encoded("현재 위치"),
-                "endName", encoded("목적지"),
-                "reqCoordType", COORDINATE_TYPE,
-                "resCoordType", COORDINATE_TYPE,
-                "searchOption", SEARCH_OPTION_RECOMMENDED,
-                "sort", "index"
-        );
+    private String directionsPath(DirectionsMode mode) {
+        return mode == DirectionsMode.DRIVING
+                ? DRIVING_DIRECTIONS_PATH
+                : WALKING_DIRECTIONS_PATH;
+    }
+
+    private Map<String, Object> requestBody(
+            DirectionsRequest request,
+            DirectionsMode mode
+    ) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("startX", request.startLongitude());
+        body.put("startY", request.startLatitude());
+        body.put("endX", request.goalLongitude());
+        body.put("endY", request.goalLatitude());
+        body.put("startName", encoded("현재 위치"));
+        body.put("endName", encoded("목적지"));
+        body.put("reqCoordType", COORDINATE_TYPE);
+        body.put("resCoordType", COORDINATE_TYPE);
+        body.put("searchOption", SEARCH_OPTION_RECOMMENDED);
+        if (mode == DirectionsMode.DRIVING) {
+            body.put("trafficInfo", "N");
+        } else {
+            body.put("sort", "index");
+        }
+        return body;
     }
 
     private DirectionsResponse parseResponse(JsonNode response) {
@@ -91,6 +108,8 @@ public class TmapDirectionsClient {
 
         int distanceMeters = -1;
         long durationSeconds = -1;
+        int tollFare = 0;
+        int taxiFare = 0;
         List<DirectionsResponse.Coordinate> path = new ArrayList<>();
 
         for (JsonNode feature : response.path("features")) {
@@ -98,6 +117,8 @@ public class TmapDirectionsClient {
             if (distanceMeters < 0 && featureProperties.has("totalDistance")) {
                 distanceMeters = featureProperties.path("totalDistance").asInt(-1);
                 durationSeconds = featureProperties.path("totalTime").asLong(-1);
+                tollFare = featureProperties.path("totalFare").asInt(0);
+                taxiFare = featureProperties.path("taxiFare").asInt(0);
             }
 
             JsonNode geometry = feature.path("geometry");
@@ -114,8 +135,8 @@ public class TmapDirectionsClient {
         return new DirectionsResponse(
                 distanceMeters,
                 durationSeconds * 1000,
-                0,
-                0,
+                tollFare,
+                taxiFare,
                 0,
                 path
         );
