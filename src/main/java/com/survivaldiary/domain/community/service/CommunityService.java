@@ -19,6 +19,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +36,10 @@ public class CommunityService {
     public PostResponse create(Long userId, CreatePostRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        boolean commentsDisabled = user.getRole() == User.Role.ADMIN && request.commentsDisabled();
-        boolean commentsHidden = user.getRole() == User.Role.ADMIN && request.commentsHidden();
+        boolean commentsDisabled = user.getRole() == User.Role.ADMIN
+                && Boolean.TRUE.equals(request.commentsDisabled());
+        boolean commentsHidden = user.getRole() == User.Role.ADMIN
+                && Boolean.TRUE.equals(request.commentsHidden());
         Post post = postRepository.save(Post.builder().user(user).category(request.category())
                 .title(request.title()).content(request.content())
                 .hashtags(join(request.hashtags())).imageUrls(join(request.imageUrls()))
@@ -52,8 +55,10 @@ public class CommunityService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Post post = requireOwner(postId, user);
-        boolean commentsDisabled = user.getRole() == User.Role.ADMIN && request.commentsDisabled();
-        boolean commentsHidden = user.getRole() == User.Role.ADMIN && request.commentsHidden();
+        boolean commentsDisabled = user.getRole() == User.Role.ADMIN
+                && Boolean.TRUE.equals(request.commentsDisabled());
+        boolean commentsHidden = user.getRole() == User.Role.ADMIN
+                && Boolean.TRUE.equals(request.commentsHidden());
         post.update(request.category(), request.title(), request.content(), join(request.hashtags()),
                 join(request.imageUrls()), request.imageAlignment(), commentsDisabled, commentsHidden);
         return response(post, userId);
@@ -69,9 +74,17 @@ public class CommunityService {
     @Transactional(readOnly = true)
     public Page<PostResponse> list(Long userId, String category, int page, int size) {
         Page<Post> posts = category == null || category.isBlank()
-                ? postRepository.findAll(PageRequest.of(page, size))
-                : postRepository.findByCategoryOrderByCreatedAtDesc(category, PageRequest.of(page, size));
+                ? postRepository.findCommunityPosts(User.Role.USER,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                : postRepository.findCommunityPostsByCategory(category, User.Role.USER,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
         return posts.map(post -> response(post, userId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostResponse> popular(Long userId, int size) {
+        return postRepository.findPopularCommunityPosts(PageRequest.of(0, size))
+                .map(post -> response(post, userId));
     }
 
     @Transactional(readOnly = true)

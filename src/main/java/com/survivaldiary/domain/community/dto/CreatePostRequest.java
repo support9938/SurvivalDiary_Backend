@@ -11,6 +11,6 @@ public record CreatePostRequest(
         List<@Size(max = 100) String> hashtags,
         List<@Size(max = 5_000_000) String> imageUrls,
         @Size(max = 20) String imageAlignment,
-        boolean commentsDisabled,
-        boolean commentsHidden
+        Boolean commentsDisabled,
+        Boolean commentsHidden
 ) {}
