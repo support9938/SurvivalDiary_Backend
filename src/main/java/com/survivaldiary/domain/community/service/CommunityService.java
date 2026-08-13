@@ -88,6 +88,12 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PostResponse> adminPosts(Long userId, int page, int size) {
+        return postRepository.findAllByOrderByCreatedAtDescIdDesc(PageRequest.of(page, size))
+                .map(post -> response(post, userId));
+    }
+
+    @Transactional(readOnly = true)
     public PostResponse get(Long postId, Long userId) {
         return response(postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)), userId);
@@ -142,10 +148,22 @@ public class CommunityService {
     }
 
     @Transactional
+    public CommentResponse createAdminAnswer(Long postId, Long userId, CreateCommentRequest request) {
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (admin.getRole() != User.Role.ADMIN) throw new BusinessException(ErrorCode.FORBIDDEN);
+        Post post = requirePost(postId);
+        Comment comment = commentRepository.save(new Comment(post, admin, request.content().trim()));
+        return CommentResponse.from(comment, userId);
+    }
+
+    @Transactional
     public void deleteComment(Long commentId, Long userId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        if (!comment.getUser().getId().equals(userId)) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getRole() != User.Role.ADMIN && !comment.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         commentRepository.delete(comment);

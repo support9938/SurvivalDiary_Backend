@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
+    Page<Post> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
     @Query("select p from Post p where p.user.role = :userRole order by p.createdAt desc, p.id desc")
     Page<Post> findCommunityPosts(@Param("userRole") User.Role userRole, Pageable pageable);
 
