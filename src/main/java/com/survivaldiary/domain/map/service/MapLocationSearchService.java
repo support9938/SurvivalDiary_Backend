@@ -2,6 +2,7 @@ package com.survivaldiary.domain.map.service;
 
 import com.survivaldiary.domain.map.client.NaverGeocodingClient;
 import com.survivaldiary.domain.map.client.NaverPlaceSearchClient;
+import com.survivaldiary.domain.map.client.TmapPoiSearchClient;
 import com.survivaldiary.domain.map.dto.MapLocationSearchResponse;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -12,13 +13,16 @@ public class MapLocationSearchService {
     private static final int MAX_RESULTS = 5;
 
     private final NaverPlaceSearchClient placeSearchClient;
+    private final TmapPoiSearchClient tmapPoiSearchClient;
     private final NaverGeocodingClient geocodingClient;
 
     public MapLocationSearchService(
             NaverPlaceSearchClient placeSearchClient,
+            TmapPoiSearchClient tmapPoiSearchClient,
             NaverGeocodingClient geocodingClient
     ) {
         this.placeSearchClient = placeSearchClient;
+        this.tmapPoiSearchClient = tmapPoiSearchClient;
         this.geocodingClient = geocodingClient;
     }
 
@@ -38,6 +42,18 @@ public class MapLocationSearchService {
                 .toList();
         if (!places.isEmpty()) {
             return places;
+        }
+        List<MapLocationSearchResponse> tmapPlaces = tmapPoiSearchClient.search(normalizedQuery, MAX_RESULTS)
+                .stream()
+                .map(place -> new MapLocationSearchResponse(
+                        place.name().isBlank() ? normalizedQuery : place.name(),
+                        place.address(),
+                        place.latitude(),
+                        place.longitude()
+                ))
+                .toList();
+        if (!tmapPlaces.isEmpty()) {
+            return tmapPlaces;
         }
         return geocodingClient.findCoordinates(normalizedQuery)
                 .map(coordinates -> List.of(new MapLocationSearchResponse(

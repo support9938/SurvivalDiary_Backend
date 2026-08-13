@@ -100,8 +100,8 @@ public class NaverPlaceSearchClient {
         }
         List<Place> places = new ArrayList<>();
         for (JsonNode item : response.path("items")) {
-            double longitude = item.path("mapx").asDouble(Double.NaN);
-            double latitude = item.path("mapy").asDouble(Double.NaN);
+            double longitude = normalizeCoordinate(item.path("mapx").asDouble(Double.NaN));
+            double latitude = normalizeCoordinate(item.path("mapy").asDouble(Double.NaN));
             if (!isCoordinate(latitude, longitude)) {
                 continue;
             }
@@ -113,6 +113,15 @@ public class NaverPlaceSearchClient {
             ));
         }
         return List.copyOf(places);
+    }
+
+    static double normalizeCoordinate(double coordinate) {
+        if (!Double.isFinite(coordinate)) {
+            return coordinate;
+        }
+        return Math.abs(coordinate) > 180
+                ? coordinate / 10_000_000d
+                : coordinate;
     }
 
     private static boolean isCoordinate(double latitude, double longitude) {
