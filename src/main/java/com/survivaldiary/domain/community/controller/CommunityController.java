@@ -28,7 +28,15 @@ public class CommunityController {
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Page<PostResponse> result = communityService.list(userId, category, Math.max(page, 0), Math.min(Math.max(size, 1), 50));
+        Page<PostResponse> result = communityService.list(userId, category, Math.max(page, 0), Math.min(Math.max(size, 1), 60));
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(result)));
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> popular(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(defaultValue = "5") int size) {
+        Page<PostResponse> result = communityService.popular(userId, Math.min(Math.max(size, 1), 10));
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(result)));
     }
 
