@@ -143,7 +143,7 @@ public class AuthService {
                     ? displayName
                     : displayName.substring(0, 50);
         }
-        return provider == SocialAccount.Provider.KAKAO ? "카카오 생존러" : "네이버 생존러";
+        return provider == SocialAccount.Provider.KAKAO ? "카카오 생존자" : "네이버 생존자";
     }
 
     @Transactional
