@@ -16,7 +16,13 @@ import tools.jackson.databind.JsonNode;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 
 @Slf4j
 @Component
@@ -26,6 +32,8 @@ public class YouthPolicyClient {
 
     private final RestClient restClient;
     private final YouthPolicyProperties properties;
+    private final Map<YouthPolicySearchRequest, CachedResponse> searchCache =
+            new LinkedHashMap<>(16, 0.75f, true);
 
     public YouthPolicyClient(RestClient youthPolicyRestClient, YouthPolicyProperties properties) {
         this.restClient = youthPolicyRestClient;
@@ -35,14 +43,22 @@ public class YouthPolicyClient {
     public JsonNode search(YouthPolicySearchRequest request) {
         ProviderOperation operation = ProviderOperation.SEARCH;
         String apiKey = requireApiKey(operation);
+        JsonNode freshCache = cachedResponse(request, properties.getCacheTtl());
+        if (freshCache != null) {
+            return freshCache;
+        }
 
-        return execute(operation, () -> restClient.get()
+        ProviderResult result = execute(operation, () -> restClient.get()
                 .uri(uriBuilder -> buildSearchUri(uriBuilder, apiKey, request))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (httpRequest, response) -> {
                     throw providerError(response.getStatusCode(), false, operation);
                 })
-                .body(JsonNode.class));
+                .body(JsonNode.class), () -> cachedResponse(request, properties.getStaleCacheTtl()));
+        if (!result.fromFallback()) {
+            cacheResponse(request, result.body());
+        }
+        return result.body();
     }
 
     public JsonNode findDetail(String policyId) {
@@ -64,7 +80,7 @@ public class YouthPolicyClient {
                 .onStatus(HttpStatusCode::isError, (httpRequest, response) -> {
                     throw providerError(response.getStatusCode(), true, operation);
                 })
-                .body(JsonNode.class));
+                .body(JsonNode.class), () -> null).body();
     }
 
     private String requireApiKey(ProviderOperation operation) {
@@ -79,7 +95,42 @@ public class YouthPolicyClient {
         }
     }
 
-    private JsonNode execute(ProviderOperation operation, ProviderCall call) {
+    private ProviderResult execute(
+            ProviderOperation operation,
+            ProviderCall call,
+            Supplier<JsonNode> staleFallback
+    ) {
+        int maxAttempts = properties.getRetryCount() + 1;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return new ProviderResult(executeOnce(operation, call), false);
+            } catch (TransientProviderException exception) {
+                if (attempt < maxAttempts) {
+                    log.warn(
+                            "온통청년 정책 제공처 일시 오류 재시도: operation={}, attempt={}/{}",
+                            operation,
+                            attempt + 1,
+                            maxAttempts
+                    );
+                    waitBeforeRetry();
+                    continue;
+                }
+
+                JsonNode cached = staleFallback.get();
+                if (cached != null) {
+                    log.warn(
+                            "온통청년 정책 제공처 장애로 최근 성공 응답 사용: operation={}",
+                            operation
+                    );
+                    return new ProviderResult(cached, true);
+                }
+                throw new BusinessException(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+            }
+        }
+        throw new BusinessException(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+    }
+
+    private JsonNode executeOnce(ProviderOperation operation, ProviderCall call) {
         try {
             JsonNode response = call.execute();
             if (response == null) {
@@ -90,7 +141,7 @@ public class YouthPolicyClient {
                 throw new BusinessException(ErrorCode.POLICY_PROVIDER_BAD_RESPONSE);
             }
             return response;
-        } catch (BusinessException exception) {
+        } catch (BusinessException | TransientProviderException exception) {
             throw exception;
         } catch (ResourceAccessException exception) {
             log.warn(
@@ -98,7 +149,7 @@ public class YouthPolicyClient {
                     operation,
                     classifyResourceAccess(exception)
             );
-            throw new BusinessException(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+            throw new TransientProviderException(exception);
         } catch (RestClientException | HttpMessageConversionException exception) {
             log.warn(
                     "온통청년 정책 제공처 응답 오류: operation={}, reason=RESPONSE_PROCESSING_FAILURE, exceptionType={}",
@@ -109,7 +160,44 @@ public class YouthPolicyClient {
         }
     }
 
-    private BusinessException providerError(
+    private void waitBeforeRetry() {
+        try {
+            Thread.sleep(properties.getRetryDelay().toMillis());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+        }
+    }
+
+    private JsonNode cachedResponse(YouthPolicySearchRequest request, Duration maxAge) {
+        synchronized (searchCache) {
+            CachedResponse cached = searchCache.get(request);
+            if (cached == null) {
+                return null;
+            }
+            Duration age = Duration.between(cached.savedAt(), Instant.now());
+            if (age.compareTo(maxAge) > 0) {
+                if (age.compareTo(properties.getStaleCacheTtl()) > 0) {
+                    searchCache.remove(request);
+                }
+                return null;
+            }
+            return cached.body().deepCopy();
+        }
+    }
+
+    private void cacheResponse(YouthPolicySearchRequest request, JsonNode response) {
+        synchronized (searchCache) {
+            searchCache.put(request, new CachedResponse(response.deepCopy(), Instant.now()));
+            while (searchCache.size() > properties.getCacheMaxEntries()) {
+                Iterator<YouthPolicySearchRequest> iterator = searchCache.keySet().iterator();
+                iterator.next();
+                iterator.remove();
+            }
+        }
+    }
+
+    private RuntimeException providerError(
             HttpStatusCode status,
             boolean detailRequest,
             ProviderOperation operation
@@ -117,17 +205,23 @@ public class YouthPolicyClient {
         if (detailRequest && status.value() == 404) {
             return new BusinessException(ErrorCode.POLICY_NOT_FOUND);
         }
-        if (status.value() == 401 || status.value() == 403 || status.is5xxServerError()) {
-            String reason = status.value() == 401 || status.value() == 403
-                    ? "AUTH_REJECTED"
-                    : "PROVIDER_SERVER_ERROR";
+        if (status.value() == 401 || status.value() == 403) {
             log.warn(
                     "온통청년 정책 제공처 HTTP 오류: operation={}, reason={}, status={}",
                     operation,
-                    reason,
+                    "AUTH_REJECTED",
                     status.value()
             );
             return new BusinessException(ErrorCode.POLICY_PROVIDER_UNAVAILABLE);
+        }
+        if (status.is5xxServerError()) {
+            log.warn(
+                    "온통청년 정책 제공처 HTTP 오류: operation={}, reason={}, status={}",
+                    operation,
+                    "PROVIDER_SERVER_ERROR",
+                    status.value()
+            );
+            return new TransientProviderException();
         }
         log.warn(
                 "온통청년 정책 제공처 HTTP 오류: operation={}, reason=UNEXPECTED_HTTP_STATUS, status={}",
@@ -202,5 +296,20 @@ public class YouthPolicyClient {
     private enum ProviderOperation {
         SEARCH,
         DETAIL
+    }
+
+    private record CachedResponse(JsonNode body, Instant savedAt) {
+    }
+
+    private record ProviderResult(JsonNode body, boolean fromFallback) {
+    }
+
+    private static final class TransientProviderException extends RuntimeException {
+        private TransientProviderException() {
+        }
+
+        private TransientProviderException(Throwable cause) {
+            super(cause);
+        }
     }
 }
