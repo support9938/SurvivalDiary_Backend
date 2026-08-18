@@ -10,10 +10,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.util.UriBuilder;
 import tools.jackson.databind.JsonNode;
 
+import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class PublicParkingClient {
     public PublicParkingProviderPage fetchPage(int page, int pageSize) {
         try {
             JsonNode root = restClient.get()
-                    .uri(uriBuilder -> buildUri(uriBuilder, page, pageSize))
+                    .uri(buildUri(page, pageSize))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, response) -> {
                         throw providerError(response.getStatusCode());
@@ -53,22 +54,25 @@ public class PublicParkingClient {
         }
     }
 
-    private java.net.URI buildUri(UriBuilder uriBuilder, int page, int pageSize) {
-        return uriBuilder
-                .path(PATH)
-                .queryParam("serviceKey", decodedApiKey())
-                .queryParam("pageNo", page)
-                .queryParam("numOfRows", pageSize)
-                .queryParam("type", "json")
-                .queryParam("prkplceSe", "공영")
-                .build();
+    private URI buildUri(int page, int pageSize) {
+        String baseUrl = properties.getBaseUrl().toString();
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return URI.create(baseUrl + PATH
+                + "?serviceKey=" + encodedApiKey()
+                + "&pageNo=" + page
+                + "&numOfRows=" + pageSize
+                + "&type=json"
+                + "&prkplceSe=" + URLEncoder.encode("공영", StandardCharsets.UTF_8));
     }
 
-    private String decodedApiKey() {
+    private String encodedApiKey() {
         String apiKey = properties.requireApiKey();
-        return apiKey.contains("%")
+        String decoded = apiKey.contains("%")
                 ? URLDecoder.decode(apiKey, StandardCharsets.UTF_8)
                 : apiKey;
+        return URLEncoder.encode(decoded, StandardCharsets.UTF_8);
     }
 
     private PublicParkingProviderPage parse(JsonNode root, int page, int pageSize) {
