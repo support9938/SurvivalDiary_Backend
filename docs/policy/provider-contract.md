@@ -694,6 +694,7 @@ DB 구조, 갱신·삭제 정책, 캐시와 공통 API 계약을 변경하는 �
   "districtCode": "11680",
   "workStatus": "UNEMPLOYED",
   "jobSeeking": true,
+  "incomeRange": "BELOW_100",
   "educationLevel": "UNIVERSITY_4_YEAR",
   "enrollmentStatus": "GRADUATED",
   "interests": ["EMPLOYMENT", "ASSET_BUILDING", "TRANSPORT"]
@@ -704,6 +705,8 @@ DB 구조, 갱신·삭제 정책, 캐시와 공통 API 계약을 변경하는 �
 - 소셜 제공처가 생년월일을 주지 않은 사용자는 앱에서 입력한 `age`를 정책 조건에 저장해 사용한다.
 - 저장 나이는 생년월일이 없는 계정의 대체값이며, 사용자가 조건을 수정할 때 최신 값으로 갱신한다.
 - `workStatus`, `jobSeeking`은 서로 독립적인 선택 정보다.
+- `incomeRange`는 `BELOW_50`, `BELOW_100`, `BELOW_150`, `NO_LIMIT` 중 하나이며,
+  모르는 경우 `null`로 보낸다. 제공처 소득 데이터가 불명확하면 정책을 제외하지 않고 확인 필요로 표시한다.
 - `educationLevel`은 중학교 졸업 이하, 고등학교, 2·3년제 대학, 4년제 대학,
   대학원 이상, 기타 교육 과정으로 구분한다.
 - `enrollmentStatus`는 재학, 휴학, 졸업 예정, 졸업, 중퇴, 해당 없음으로 구분한다.
@@ -728,7 +731,8 @@ DB 구조, 갱신·삭제 정책, 캐시와 공통 API 계약을 변경하는 �
 ### 16.4 실패와 호환 처리
 
 - V11은 기존 정책 기본 조건 행을 유지한 채 새 필드와 관심 주제를 추가한다.
-- 새 앱 요청은 기존 소득값을 의도치 않게 지우지 않지만, 새 추천 판단에는 사용하지 않는다.
+- PUT은 전체 교체 계약이므로 새 앱이 `incomeRange`를 `null`로 보내면 기존 소득값도 초기화한다.
+- 소득 구간은 제공처 조건이 불명확한 정책을 제외하지 않고 `CHECK_REQUIRED`로 안내하는 데 사용한다.
 - 알 수 없는 근로·교육·관심 코드는 HTTP 400으로 거절한다.
 - 교육 단계와 학적 상태가 온통청년 `schoolCd`와 명확히 다르면 제외한다.
 - 휴학처럼 제공처에 독립 코드가 없어 확정할 수 없으면 제외하지 않고 `CHECK_REQUIRED` 사유를 추가한다.

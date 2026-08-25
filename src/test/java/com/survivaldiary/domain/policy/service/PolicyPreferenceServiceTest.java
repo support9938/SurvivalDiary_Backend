@@ -66,7 +66,7 @@ class PolicyPreferenceServiceTest {
     }
 
     @Test
-    void 기존_조건은_같은_사용자_행에서_전체_교체한다() {
+    void 기존_조건은_null_선택값까지_같은_사용자_행에서_전체_교체한다() {
         PolicyPreference existing = PolicyPreference.create(
                 7L,
                 25,
@@ -89,12 +89,26 @@ class PolicyPreferenceServiceTest {
         assertThat(existing.getRegionCode()).isEqualTo("26");
         assertThat(existing.getAge()).isEqualTo(27);
         assertThat(existing.getDistrictCode()).isNull();
-        assertThat(existing.getIncomeRange()).isEqualTo("BELOW_100");
+        assertThat(existing.getIncomeRange()).isNull();
         assertThat(existing.getCategory()).isNull();
         assertThat(existing.getWorkStatus()).isEqualTo("UNEMPLOYED");
         assertThat(existing.getJobSeeking()).isTrue();
         assertThat(existing.getInterests()).containsExactly("ASSET_BUILDING");
         assertThat(response.regionCode()).isEqualTo("26");
+    }
+
+    @Test
+    void 확장_추천_조건과_소득_구간을_함께_저장한다() {
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user()));
+        when(preferenceRepository.findById(7L)).thenReturn(Optional.empty());
+        when(preferenceRepository.save(any(PolicyPreference.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.save(7L, request("11", null, "BELOW_100"));
+
+        assertThat(response.incomeRange()).isEqualTo("BELOW_100");
+        assertThat(response.workStatus()).isEqualTo("UNEMPLOYED");
+        assertThat(response.interests()).containsExactly("ASSET_BUILDING");
     }
 
     @Test
@@ -168,12 +182,20 @@ class PolicyPreferenceServiceTest {
     }
 
     private PolicyPreferenceRequest request(String regionCode, String districtCode) {
+        return request(regionCode, districtCode, null);
+    }
+
+    private PolicyPreferenceRequest request(
+            String regionCode,
+            String districtCode,
+            String incomeRange
+    ) {
         return new PolicyPreferenceRequest(
                 27,
                 regionCode,
                 districtCode,
                 "JOB_SEEKING",
-                null,
+                incomeRange,
                 null,
                 "UNEMPLOYED",
                 true,

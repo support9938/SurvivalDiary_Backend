@@ -50,9 +50,7 @@ public class PolicyPreferenceService {
                             expandedProfile
                                     ? legacyEmploymentStatus(request)
                                     : request.employmentStatus(),
-                            expandedProfile
-                                    ? existing.getIncomeRange()
-                                    : request.incomeRange(),
+                            request.incomeRange(),
                             expandedProfile ? null : request.category(),
                             request.resolvedWorkStatus(),
                             request.resolvedJobSeeking(),
