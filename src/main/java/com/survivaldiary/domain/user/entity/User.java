@@ -117,6 +117,25 @@ public class User {
         this.profileImageUrl = profileImageUrl;
     }
 
+    public void updateByAdmin(
+            String name,
+            String nickname,
+            String phone,
+            LocalDate birthDate,
+            Gender gender,
+            String region,
+            String signupInterest,
+            String bio) {
+        this.name = name;
+        this.nickname = nickname;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.region = region;
+        this.signupInterest = signupInterest;
+        this.bio = bio;
+    }
+
     public void promoteToAdmin() {
         this.role = Role.ADMIN;
     }
