@@ -2,6 +2,7 @@ package com.survivaldiary.domain.user.dto;
 
 import com.survivaldiary.domain.user.entity.User;
 import com.survivaldiary.domain.user.entity.UserLocation;
+import com.survivaldiary.domain.savingbadge.dto.SavingBadgeResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -22,10 +23,15 @@ public record UserResponse(
         Double defaultResidenceLatitude,
         Double defaultResidenceLongitude,
         User.Role role,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        SavingBadgeResponse savingBadge
 ) {
 
-    public static UserResponse from(User user, UserLocation defaultResidence) {
+    public static UserResponse from(
+            User user,
+            UserLocation defaultResidence,
+            SavingBadgeResponse savingBadge
+    ) {
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
@@ -43,7 +49,8 @@ public record UserResponse(
                 defaultResidence == null ? null : defaultResidence.getLatitude().doubleValue(),
                 defaultResidence == null ? null : defaultResidence.getLongitude().doubleValue(),
                 user.getRole(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                savingBadge
         );
     }
 }

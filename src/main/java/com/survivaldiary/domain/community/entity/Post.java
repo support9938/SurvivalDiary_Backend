@@ -34,6 +34,12 @@ public class Post {
     @Column(nullable = false, length = 30)
     private String category;
 
+    @Column(name = "admin_inquiry", nullable = false)
+    private boolean adminInquiry;
+
+    @Column(name = "is_secret", nullable = false)
+    private boolean secret;
+
     @Column(nullable = false, length = 200)
     private String title;
 
@@ -64,7 +70,8 @@ public class Post {
     @Builder
     private Post(User user, String category, String title, String content,
                  String hashtags, String imageUrls, String imageAlignment,
-                 boolean commentsDisabled, boolean commentsHidden) {
+                 boolean commentsDisabled, boolean commentsHidden,
+                 boolean adminInquiry, boolean secret) {
         this.user = user;
         this.category = category;
         this.title = title;
@@ -74,6 +81,8 @@ public class Post {
         this.imageAlignment = imageAlignment == null ? "center" : imageAlignment;
         this.commentsDisabled = commentsDisabled;
         this.commentsHidden = commentsHidden;
+        this.adminInquiry = adminInquiry;
+        this.secret = secret;
     }
 
     @PrePersist
@@ -83,7 +92,8 @@ public class Post {
 
     public void update(String category, String title, String content, String hashtags,
                        String imageUrls, String imageAlignment,
-                       boolean commentsDisabled, boolean commentsHidden) {
+                       boolean commentsDisabled, boolean commentsHidden,
+                       boolean adminInquiry, boolean secret) {
         this.category = category;
         this.title = title;
         this.content = content;
@@ -92,5 +102,7 @@ public class Post {
         this.imageAlignment = imageAlignment == null ? "center" : imageAlignment;
         this.commentsDisabled = commentsDisabled;
         this.commentsHidden = commentsHidden;
+        this.adminInquiry = adminInquiry;
+        this.secret = secret;
     }
 }

@@ -7,6 +7,7 @@ import com.survivaldiary.domain.user.entity.User;
 import com.survivaldiary.domain.user.entity.UserLocation;
 import com.survivaldiary.domain.user.repository.UserLocationRepository;
 import com.survivaldiary.domain.user.repository.UserRepository;
+import com.survivaldiary.domain.savingbadge.service.SavingBadgeService;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserLocationRepository userLocationRepository;
     private final ProfileImageStorage profileImageStorage;
+    private final SavingBadgeService savingBadgeService;
 
     @Transactional(readOnly = true)
     public UserResponse getMe(Long userId) {
@@ -74,7 +76,7 @@ public class UserService {
                 request.latitude(),
                 request.longitude()
         ));
-        return UserResponse.from(user, residence);
+        return UserResponse.from(user, residence, savingBadgeService.badgeFor(userId));
     }
 
     private User findUser(Long userId) {
@@ -89,7 +91,8 @@ public class UserService {
     private UserResponse responseFor(User user) {
         return UserResponse.from(
                 user,
-                userLocationRepository.findFirstByUserIdOrderByCreatedAtDesc(user.getId()).orElse(null)
+                userLocationRepository.findFirstByUserIdOrderByCreatedAtDesc(user.getId()).orElse(null),
+                savingBadgeService.badgeFor(user.getId())
         );
     }
 }

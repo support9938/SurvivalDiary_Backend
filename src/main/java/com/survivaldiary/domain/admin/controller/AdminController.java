@@ -7,6 +7,7 @@ import com.survivaldiary.domain.admin.service.AdminService;
 import com.survivaldiary.domain.community.dto.CommentResponse;
 import com.survivaldiary.domain.community.dto.CreateCommentRequest;
 import com.survivaldiary.domain.community.dto.PostResponse;
+import com.survivaldiary.domain.community.dto.AdminInquirySummaryResponse;
 import com.survivaldiary.domain.community.dto.CreatePostRequest;
 import com.survivaldiary.domain.community.service.CommunityService;
 import com.survivaldiary.domain.expense.dto.ExpenseResponse;
@@ -55,8 +56,24 @@ public class AdminController {
     }
 
     @GetMapping("/community/posts")
-    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> posts(@AuthenticationPrincipal Long adminId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(communityService.adminPosts(adminId, Math.max(page, 0), Math.min(Math.max(size, 1), 60)))));
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> posts(
+            @AuthenticationPrincipal Long adminId,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(communityService.adminCommunityPosts(
+                adminId, category, Math.max(page, 0), Math.min(Math.max(size, 1), 60)))));
+    }
+
+    @GetMapping("/inquiries")
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> inquiries(@AuthenticationPrincipal Long adminId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(communityService.adminInquiryPosts(adminId, Math.max(page, 0), Math.min(Math.max(size, 1), 60)))));
+    }
+
+    @GetMapping("/inquiries/summary")
+    public ResponseEntity<ApiResponse<AdminInquirySummaryResponse>> inquirySummary() {
+        return ResponseEntity.ok(ApiResponse.ok(
+                new AdminInquirySummaryResponse(communityService.unansweredAdminInquiryCount())));
     }
 
     @Operation(summary = "커뮤니티 게시글 상세 조회")

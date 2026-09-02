@@ -40,6 +40,27 @@ public class CommunityController {
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(result)));
     }
 
+    @GetMapping("/faqs")
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> faqs(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<PostResponse> result = communityService.faqs(
+                userId, Math.max(page, 0), Math.min(Math.max(size, 1), 60));
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(result)));
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<ApiResponse<PageResponse<PostResponse>>> mine(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(defaultValue = "질문") String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<PostResponse> result = communityService.myPosts(
+                userId, category, Math.max(page, 0), Math.min(Math.max(size, 1), 60));
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(result)));
+    }
+
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostResponse>> get(
             @AuthenticationPrincipal Long userId, @PathVariable Long postId) {
