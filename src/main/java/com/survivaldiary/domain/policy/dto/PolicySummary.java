@@ -3,6 +3,7 @@ package com.survivaldiary.domain.policy.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "맞춤 정책 목록 항목")
@@ -26,6 +27,24 @@ public record PolicySummary(
         @Schema(description = "직접 확인이 필요한 이유") List<String> eligibilityReasons,
         @Schema(description = "맞춤 추천 표시 상태") PolicyRecommendationStatus recommendationStatus,
         @Schema(description = "추천 또는 확인 필요 이유") List<String> recommendationReasons,
-        @Schema(description = "사용자 조건과 일치한 구조화 근거") List<PolicyMatchSignal> matchSignals
+        @Schema(description = "사용자 조건과 일치한 구조화 근거") List<PolicyMatchSignal> matchSignals,
+        @Schema(description = "동일 제목·개별 신청 링크 기반 중복 식별값. 확인 불가 시 null") String canonicalPolicyKey,
+        @Schema(description = "제공처 최종 수정 시각. 확인 불가 시 null") LocalDateTime sourceUpdatedAt
 ) {
+    public PolicySummary(
+            String policyId, String category, PolicyCategory categoryType, String title,
+            String summary, String shortSummary, Long supportAmount,
+            PolicySupportAmountType supportAmountType, String supportText,
+            String applicationPeriodText, PolicyApplicationPeriodType applicationPeriodType,
+            LocalDate applicationStartDate, LocalDate applicationEndDate, String target,
+            String agency, PolicyEligibilityStatus eligibilityStatus, List<String> eligibilityReasons,
+            PolicyRecommendationStatus recommendationStatus, List<String> recommendationReasons,
+            List<PolicyMatchSignal> matchSignals
+    ) {
+        this(policyId, category, categoryType, title, summary, shortSummary, supportAmount,
+                supportAmountType, supportText, applicationPeriodText, applicationPeriodType,
+                applicationStartDate, applicationEndDate, target, agency, eligibilityStatus,
+                eligibilityReasons, recommendationStatus, recommendationReasons, matchSignals,
+                null, null);
+    }
 }

@@ -12,6 +12,7 @@ import com.survivaldiary.domain.policy.dto.PolicySearchResponse;
 import com.survivaldiary.domain.policy.dto.PolicySummary;
 import com.survivaldiary.global.exception.BusinessException;
 import com.survivaldiary.global.exception.ErrorCode;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -38,6 +39,8 @@ public class PolicyService {
     private final PolicyMatcher policyMatcher;
     private final PolicyMapper policyMapper;
     private final PolicyRecommendationEvaluator recommendationEvaluator;
+    private final PolicyDuplicateResolver duplicateResolver = new PolicyDuplicateResolver();
+    private final PolicySourceVersionVerifier sourceVersionVerifier;
 
     public PolicyService(
             YouthPolicyClient youthPolicyClient,
@@ -51,6 +54,7 @@ public class PolicyService {
         this.policyMatcher = policyMatcher;
         this.policyMapper = policyMapper;
         this.recommendationEvaluator = recommendationEvaluator;
+        this.sourceVersionVerifier = new PolicySourceVersionVerifier(youthPolicyClient, responseParser);
     }
 
     public PolicySearchResponse search(PolicySearchRequest request) {
@@ -108,7 +112,9 @@ public class PolicyService {
             }
 
             checkedProviderPages++;
-            providerItems.forEach(item -> candidates.putIfAbsent(item.plcyNo(), item));
+            providerItems.forEach(item -> candidates.merge(item.plcyNo(), item,
+                    (previous, candidate) -> PolicyDuplicateResolver.isNewer(candidate, previous)
+                            ? candidate : previous));
             providerMayHaveMore = providerItems.size() >= request.requestedSize();
             if (!providerMayHaveMore) {
                 break;
@@ -118,7 +124,9 @@ public class PolicyService {
 
         Map<String, RankedPolicy> matchedItems = new LinkedHashMap<>();
 
-        for (YouthPolicyItem item : candidates.values()) {
+        List<YouthPolicyItem> deduplicated = duplicateResolver.reconcile(candidates.values(), excludedPolicyIds);
+        List<YouthPolicyItem> verified = sourceVersionVerifier.verify(deduplicated, false);
+        for (YouthPolicyItem item : duplicateResolver.reconcile(verified, excludedPolicyIds)) {
             if (excludedPolicyIds.contains(item.plcyNo())) {
                 continue;
             }
@@ -168,7 +176,14 @@ public class PolicyService {
 
         JsonNode root = youthPolicyClient.findDetail(policyId.trim());
         YouthPolicyItem item = responseParser.parseDetail(root, policyId.trim());
+        List<YouthPolicyItem> verified = sourceVersionVerifier.verify(List.of(item), true);
+        item = duplicateResolver.reconcile(verified, Set.of()).get(0);
         return policyMapper.toDetail(item);
+    }
+
+    @PreDestroy
+    public void closeSourceVersionVerifier() {
+        sourceVersionVerifier.close();
     }
 
     private List<RankedPolicy> diversify(List<RankedPolicy> rankedItems) {

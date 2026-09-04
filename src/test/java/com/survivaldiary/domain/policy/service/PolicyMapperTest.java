@@ -177,8 +177,39 @@ class PolicyMapperTest {
                 .isEqualTo(PolicyApplicationPeriodType.UNKNOWN);
         assertThat(invalidRange.applicationEndDate()).isNull();
         assertThat(explanatoryText.applicationPeriodType())
-                .isEqualTo(PolicyApplicationPeriodType.UNKNOWN);
-        assertThat(explanatoryText.applicationEndDate()).isNull();
+                .isEqualTo(PolicyApplicationPeriodType.FIXED);
+        assertThat(explanatoryText.applicationEndDate()).isEqualTo(LocalDate.of(2026, 7, 31));
+    }
+
+    @Test
+    void 상시코드라도_구체적인_기간과_마감원문을_무시하지_않는다() {
+        var source = item("https://example.org/apply");
+        for (String text : List.of("20260701~20260731", "2026.7.1(수) 09:00 ~ 2026.7.31(금) 18:00",
+                "신청기간: 2026년 7월 1일 ~ 2026년 7월 31일 예정")) {
+            var detail = mapper.toDetail(withPeriod(source, "0057002", text));
+            assertThat(detail.applicationPeriodType()).isEqualTo(PolicyApplicationPeriodType.FIXED);
+            assertThat(detail.applicationEndDate()).isEqualTo(LocalDate.of(2026, 7, 31));
+            assertThat(detail.applicationPeriodText()).isEqualTo(text);
+        }
+        assertThat(mapper.toDetail(withPeriod(source, "0057002", "접수 마감")).applicationPeriodType())
+                .isEqualTo(PolicyApplicationPeriodType.CLOSED);
+        assertThat(mapper.toDetail(withPeriod(source, "0057003", "예산 소진 시까지")).applicationPeriodType())
+                .isEqualTo(PolicyApplicationPeriodType.CLOSED);
+        assertThat(mapper.toDetail(withPeriod(source, "0057002", "예산 소진으로 접수 종료")).applicationPeriodType())
+                .isEqualTo(PolicyApplicationPeriodType.CLOSED);
+    }
+
+    @Test
+    void 복수회차나_잘못된_날짜를_상시_또는_한_기간으로_합치지_않는다() {
+        var source = item("https://example.org/apply");
+        for (String text : List.of("20260230~20260301", "20260731~20260701",
+                "1차 20260701~20260710 / 2차 20260801~20260810")) {
+            var detail = mapper.toDetail(withPeriod(source, "0057002", text));
+            assertThat(detail.applicationPeriodType()).isEqualTo(PolicyApplicationPeriodType.UNKNOWN);
+            assertThat(detail.applicationEndDate()).isNull();
+        }
+        assertThat(mapper.toDetail(withPeriod(source, "0057002", "예산 소진 시 마감")).applicationPeriodType())
+                .isEqualTo(PolicyApplicationPeriodType.UNTIL_BUDGET);
     }
 
     @Test
