@@ -110,9 +110,10 @@ class YouthPolicyDataQualityLiveContractTest {
 
     private void assertPeriodContract(PolicyDetail detail) {
         if (detail.applicationPeriodType() == PolicyApplicationPeriodType.FIXED) {
-            assertThat(detail.applicationStartDate()).isNotNull();
             assertThat(detail.applicationEndDate()).isNotNull();
-            assertThat(detail.applicationEndDate()).isAfterOrEqualTo(detail.applicationStartDate());
+            if (detail.applicationStartDate() != null) {
+                assertThat(detail.applicationEndDate()).isAfterOrEqualTo(detail.applicationStartDate());
+            }
             return;
         }
         assertThat(detail.applicationStartDate()).isNull();

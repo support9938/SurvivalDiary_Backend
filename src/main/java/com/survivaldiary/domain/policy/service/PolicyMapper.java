@@ -26,13 +26,16 @@ public class PolicyMapper {
     private final PolicyShortSummaryGenerator shortSummaryGenerator =
             new PolicyShortSummaryGenerator();
 
-    private static final String FIXED_PERIOD_CODE = "0057001";
     private static final String ALWAYS_PERIOD_CODE = "0057002";
     private static final String CLOSED_PERIOD_CODE = "0057003";
-    private static final Pattern APPLICATION_PERIOD_PATTERN = Pattern.compile(
-            "^\\s*(20\\d{2})[./-]?(\\d{2})[./-]?(\\d{2})"
-                    + "\\s*[~∼～]\\s*"
-                    + "(20\\d{2})[./-]?(\\d{2})[./-]?(\\d{2})\\s*$"
+    private static final Pattern APPLICATION_DATE_PATTERN = Pattern.compile(
+            "(?<!\\d)(?:(20\\d{2})\\s*(?:[./-]|년)\\s*(\\d{1,2})"
+                    + "\\s*(?:[./-]|월)\\s*(\\d{1,2})(?:\\s*일)?"
+                    + "|(20\\d{2})(\\d{2})(\\d{2}))(?!\\d)"
+    );
+    private static final Pattern APPLICATION_RANGE_SEPARATOR = Pattern.compile(
+            "\\s*\\.?\\s*(?:\\([월화수목금토일](?:요일)?\\))?\\s*"
+                    + "(?:\\d{1,2}:\\d{2}(?::\\d{2})?)?\\s*[~∼～–—-]\\s*"
     );
     private static final Pattern SUPPORT_AMOUNT_PATTERN = Pattern.compile(
             "([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*(억|천만|백만|십만|만|천)?\\s*원"
@@ -101,7 +104,9 @@ public class PolicyMapper {
                 matchResult.reasons(),
                 recommendationResult.status(),
                 recommendationResult.reasons(),
-                recommendationResult.matchSignals()
+                recommendationResult.matchSignals(),
+                PolicyDuplicateResolver.duplicateKey(item),
+                PolicyDuplicateResolver.sourceUpdatedAt(item)
         );
     }
 
@@ -269,6 +274,21 @@ public class PolicyMapper {
         String periodText = blankToNull(item.aplyYmd());
         String normalizedText = periodText == null ? "" : periodText.replaceAll("\\s+", "");
 
+        // 명시적인 마감은 상시·예산 코드보다 우선한다. '소진 시 마감'은 종료 확정이 아니다.
+        if (CLOSED_PERIOD_CODE.equals(periodCode)
+                || normalizedText.matches("^(?:예산소진(?:으로|에따라)?)?(?:접수|신청|모집)?"
+                + "(?:마감|종료|완료)(?:됨|되었습니다|됐습니다)?[.!]?$")) {
+            return new ApplicationPeriod(PolicyApplicationPeriodType.CLOSED, null, null);
+        }
+        // 기간 코드와 원문이 충돌하면 구체적으로 확인되는 날짜를 보존한다.
+        ApplicationPeriod dated = datedApplicationPeriod(periodText);
+        if (dated != null) {
+            return dated;
+        }
+        // 날짜가 있으나 여러 회차·역전·잘못된 날짜라면 상시라고 단정하지 않는다.
+        if (periodText != null && APPLICATION_DATE_PATTERN.matcher(periodText).find()) {
+            return ApplicationPeriod.unknown();
+        }
         if (normalizedText.contains("예산소진")) {
             return new ApplicationPeriod(
                     PolicyApplicationPeriodType.UNTIL_BUDGET,
@@ -279,34 +299,45 @@ public class PolicyMapper {
         if (ALWAYS_PERIOD_CODE.equals(periodCode) || "상시".equals(normalizedText)) {
             return new ApplicationPeriod(PolicyApplicationPeriodType.ALWAYS, null, null);
         }
-        if (CLOSED_PERIOD_CODE.equals(periodCode) || "마감".equals(normalizedText)) {
-            return new ApplicationPeriod(PolicyApplicationPeriodType.CLOSED, null, null);
-        }
-        if (!FIXED_PERIOD_CODE.equals(periodCode) || periodText == null) {
-            return ApplicationPeriod.unknown();
-        }
+        return ApplicationPeriod.unknown();
+    }
 
-        Matcher matcher = APPLICATION_PERIOD_PATTERN.matcher(periodText);
-        if (!matcher.matches()) {
-            return ApplicationPeriod.unknown();
+    private ApplicationPeriod datedApplicationPeriod(String text) {
+        if (text == null) {
+            return null;
         }
-
+        Matcher matcher = APPLICATION_DATE_PATTERN.matcher(text);
         try {
-            LocalDate startDate = localDate(matcher, 1);
-            LocalDate endDate = localDate(matcher, 4);
-            return endDate.isBefore(startDate)
-                    ? ApplicationPeriod.unknown()
-                    : new ApplicationPeriod(
-                            PolicyApplicationPeriodType.FIXED,
-                            startDate,
-                            endDate
-                    );
+            if (!matcher.find()) {
+                return null;
+            }
+            LocalDate startDate = localDate(matcher);
+            int firstStart = matcher.start();
+            int firstEnd = matcher.end();
+            if (!matcher.find()) {
+                String suffix = text.substring(firstEnd).trim();
+                if (suffix.matches("(?:까지|마감)[.!]?")) {
+                    return new ApplicationPeriod(PolicyApplicationPeriodType.FIXED, null, startDate);
+                }
+                if (text.substring(0, firstStart).isBlank() && suffix.isBlank()) {
+                    return new ApplicationPeriod(PolicyApplicationPeriodType.FIXED, startDate, startDate);
+                }
+                return null;
+            }
+            LocalDate endDate = localDate(matcher);
+            String between = text.substring(firstEnd, matcher.start());
+            if (matcher.find() || endDate.isBefore(startDate)
+                    || !APPLICATION_RANGE_SEPARATOR.matcher(between).matches()) {
+                return null;
+            }
+            return new ApplicationPeriod(PolicyApplicationPeriodType.FIXED, startDate, endDate);
         } catch (DateTimeException exception) {
-            return ApplicationPeriod.unknown();
+            return null;
         }
     }
 
-    private LocalDate localDate(Matcher matcher, int startGroup) {
+    private LocalDate localDate(Matcher matcher) {
+        int startGroup = matcher.group(1) == null ? 4 : 1;
         return LocalDate.of(
                 Integer.parseInt(matcher.group(startGroup)),
                 Integer.parseInt(matcher.group(startGroup + 1)),
